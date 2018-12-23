@@ -1,0 +1,9 @@
+./bin
+./.dapper
+./.trash-cache
+.env
+
+__pycache__
+jupyterhub_cookie_secret
+jupyterhub_config.dev.py
+jupyterhub.sqlite

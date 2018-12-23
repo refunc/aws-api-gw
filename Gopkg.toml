@@ -1,0 +1,8 @@
+[[constraint]]
+  name = "github.com/refunc/refunc"
+  branch = "master"
+
+[prune]
+  go-tests = true
+  non-go = true
+
