@@ -4,7 +4,8 @@
 *.swp
 .vscode
 .env
-/package/*
+/package
+/vendor
 !/package/Dockerfile
 .bash_history
 

@@ -59,22 +59,7 @@ from loguru import logger
 
 APP_NAME = "lambda_api"
 PATH_ROOT = "/2015-03-31"
-ARCHIVE_FILE_PATTERN = "%s/lambda.handler.*.jar" % config.TMP_FOLDER
-LAMBDA_SCRIPT_PATTERN = "%s/lambda_script_*.py" % config.TMP_FOLDER
 
-# List of Lambda runtime names. Keep them in this list, mainly to silence the linter
-LAMBDA_RUNTIMES = [
-    LAMBDA_RUNTIME_PYTHON27,
-    LAMBDA_RUNTIME_PYTHON36,
-    LAMBDA_RUNTIME_DOTNETCORE2,
-    LAMBDA_RUNTIME_NODEJS,
-    LAMBDA_RUNTIME_NODEJS610,
-    LAMBDA_RUNTIME_NODEJS810,
-    LAMBDA_RUNTIME_JAVA8,
-]
-
-LAMBDA_DEFAULT_HANDLER = "handler.handler"
-LAMBDA_DEFAULT_RUNTIME = LAMBDA_RUNTIME_PYTHON27
 LAMBDA_DEFAULT_STARTING_POSITION = "LATEST"
 LAMBDA_DEFAULT_TIMEOUT = 60
 LAMBDA_ZIP_FILE_NAME = "original_lambda_archive.zip"
@@ -88,19 +73,8 @@ arn_to_lambda = {}
 # list of event source mappings for the API
 event_source_mappings = []
 
-# logger
-# LOG = logging.getLogger(__name__)
-
-# mutex for access to CWD and ENV
-exec_mutex = threading.Semaphore(1)
-
-# whether to use Docker for execution
-DO_USE_DOCKER = None
-
 # lambda executor instance
-LAMBDA_EXECUTOR = lambda_executors.AVAILABLE_EXECUTORS.get(
-    config.LAMBDA_EXECUTOR, lambda_executors.DEFAULT_EXECUTOR
-)
+LAMBDA_EXECUTOR = lambda_executors.EXECUTOR_REFUNC
 
 NAMESPACE = os.environ.get("REFUNC_NAMESPACE", "refunc-play")
 S3_BUCKET = os.environ.get("S3_BUCKET", os.environ.get("MINIO_BUCKET", "refunc"))
@@ -182,7 +156,7 @@ def get_fundeves_from_arn(arn):
     return refunc.list_funcdefs(ns=ns, label_selector=f"{REFUNC_NAME_LABEL}={name}")
 
 
-def get_lambda_from_arn(arn):
+def get_lambda_from_arn(arn) -> RefuncLambdaFunction:
     fnds = get_fundeves_from_arn(arn)
     if not fnds:
         return
@@ -262,20 +236,6 @@ def delete_event_source(uuid_value):
         if uuid_value == m["UUID"]:
             return event_source_mappings.pop(i)
     return {}
-
-
-def use_docker():
-    global DO_USE_DOCKER
-    if DO_USE_DOCKER is None:
-        DO_USE_DOCKER = False
-        if "docker" in config.LAMBDA_EXECUTOR:
-            try:
-                run("docker images", print_error=False)
-                # run('ping -c 1 -t 1 %s' % DOCKER_BRIDGE_IP, print_error=False)
-                DO_USE_DOCKER = True
-            except Exception:
-                pass
-    return DO_USE_DOCKER
 
 
 def process_apigateway_invocation(
@@ -448,7 +408,13 @@ def do_update_alias(arn, alias, version, description=None):
 
 
 def run_lambda(
-    event, context, func_arn, version=None, suppress_output=False, asynchronous=False
+    event,
+    context,
+    func_arn,
+    version=None,
+    suppress_output=False,
+    asynchronous=False,
+    func_details=None,
 ):
     if suppress_output:
         stdout_ = sys.stdout
@@ -457,10 +423,14 @@ def run_lambda(
         sys.stdout = stream
         sys.stderr = stream
     try:
-        func_details = arn_to_lambda.get(func_arn)
+        if not func_details:
+            func_details = get_lambda_from_arn(func_arn)
+        if not func_details:
+            raise Exception(f"{func_arn} was not found")
+
         if not context:
             context = LambdaContext(func_details, version)
-        result, log_output = LAMBDA_EXECUTOR.execute(
+        result, _ = LAMBDA_EXECUTOR.execute(
             func_arn,
             func_details,
             event,
@@ -477,65 +447,6 @@ def run_lambda(
             sys.stdout = stdout_
             sys.stderr = stderr_
     return result
-
-
-def exec_lambda_code(
-    script, handler_function="handler", lambda_cwd=None, lambda_env=None
-):
-    if lambda_cwd or lambda_env:
-        exec_mutex.acquire()
-        if lambda_cwd:
-            previous_cwd = os.getcwd()
-            os.chdir(lambda_cwd)
-            sys.path = [lambda_cwd] + sys.path
-        if lambda_env:
-            previous_env = dict(os.environ)
-            os.environ.update(lambda_env)
-    # generate lambda file name
-    lambda_id = "l_%s" % short_uid()
-    lambda_file = LAMBDA_SCRIPT_PATTERN.replace("*", lambda_id)
-    save_file(lambda_file, script)
-    # delete temporary .py and .pyc files on exit
-    TMP_FILES.append(lambda_file)
-    TMP_FILES.append("%sc" % lambda_file)
-    try:
-        handler_module = imp.load_source(lambda_id, lambda_file)
-        module_vars = handler_module.__dict__
-    except Exception as e:
-        logger.error("Unable to exec: %s %s" % (script, traceback.format_exc()))
-        raise e
-    finally:
-        if lambda_cwd or lambda_env:
-            if lambda_cwd:
-                os.chdir(previous_cwd)
-                sys.path.pop(0)
-            if lambda_env:
-                os.environ = previous_env
-            exec_mutex.release()
-    return module_vars[handler_function]
-
-
-# def get_handler_file_from_name(handler_name, runtime=LAMBDA_DEFAULT_RUNTIME):
-#     # TODO: support Java Lambdas in the future
-#     delimiter = "."
-#     if runtime.startswith(LAMBDA_RUNTIME_NODEJS):
-#         file_ext = ".js"
-#     elif runtime.startswith(LAMBDA_RUNTIME_GOLANG):
-#         file_ext = ""
-#     elif runtime.startswith(LAMBDA_RUNTIME_DOTNETCORE2):
-#         file_ext = ".dll"
-#         delimiter = ":"
-#     else:
-#         file_ext = ".py"
-#     return "%s%s" % (handler_name.split(delimiter)[0], file_ext)
-
-
-# def get_handler_function_from_name(handler_name, runtime=LAMBDA_DEFAULT_RUNTIME):
-#     # TODO: support Java Lambdas in the future
-#     if runtime.startswith(LAMBDA_RUNTIME_DOTNETCORE2):
-#         return handler_name.split(":")[-1]
-#     else:
-#         return handler_name.split(".")[-1]
 
 
 def error_response(msg, code=500, error_type="InternalFailure"):
@@ -767,7 +678,7 @@ def update_function_code(function):
             - name: 'request'
               in: body
     """
-    data = json.loads(to_str(request.data))
+    # data = json.loads(to_str(request.data))
     # result = set_function_code(data, function)
     result = {}
     return jsonify(result or {})
@@ -855,18 +766,20 @@ def invoke_function(function):
     else:
         qualifier = request.args.get("Qualifier")
 
-    if arn not in arn_to_lambda:
+    func = get_lambda_from_arn(arn)
+    if not func:
         return error_response(
             "Function does not exist: %s" % arn,
             404,
             error_type="ResourceNotFoundException",
         )
-    if qualifier and not arn_to_lambda.get(arn).qualifier_exists(qualifier):
+    if qualifier and not func.qualifier_exists(qualifier):
         return error_response(
             "Function does not exist: {0}:{1}".format(arn, qualifier),
             404,
             error_type="ResourceNotFoundException",
         )
+
     data = None
     if request.data:
         try:

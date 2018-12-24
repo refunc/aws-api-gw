@@ -7,3 +7,5 @@ __pycache__
 jupyterhub_cookie_secret
 jupyterhub_config.dev.py
 jupyterhub.sqlite
+
+/vendor
