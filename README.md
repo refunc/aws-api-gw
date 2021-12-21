@@ -1,6 +1,6 @@
 # AWS API GW
 
-Simple [refunc](https://github.com/refunc/refunc) gateway implements aws' lambda api based on [localstack](https://github.com/localstack/localstack)
+Simple [refunc](https://github.com/refunc/refunc) gateway implements aws's lambda api.
 
 ## Current Supported Methods
 
