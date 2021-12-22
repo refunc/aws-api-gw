@@ -19,10 +19,11 @@ import (
 	"github.com/refunc/refunc/pkg/utils/cmdutil/sharedcfg"
 )
 
-var (
-	Debug bool
-	Addr  string
-)
+var config struct {
+	Debug     bool
+	Addr      string
+	Namespace string
+}
 
 func main() {
 	runtime.GOMAXPROCS(16 * runtime.NumCPU())
@@ -39,22 +40,22 @@ func main() {
 			// gin setting
 			gin.DisableConsoleColor()
 
-			if Debug {
+			if config.Debug {
 				gin.SetMode(gin.DebugMode)
 			} else {
 				gin.SetMode(gin.ReleaseMode)
 			}
 
-			sc := sharedcfg.New(context.Background(), "")
+			sc := sharedcfg.New(context.Background(), config.Namespace)
 
 			// router
 			router := routers.CreateHTTPRouter(sc.Configs())
 
 			klog.Infof("Refunc aws lambda api gateway version: %s\n", version.Version)
-			klog.Infof("Listening and serving HTTP on %s\n", Addr)
+			klog.Infof("Listening and serving HTTP on %s\n", config.Addr)
 
 			srv := &http.Server{
-				Addr:    Addr,
+				Addr:    config.Addr,
 				Handler: router,
 			}
 
@@ -64,8 +65,9 @@ func main() {
 		},
 	}
 
-	cmd.Flags().StringVar(&Addr, "conf", "0.0.0.0:9000", "ListenAndServe Address.")
-	cmd.Flags().BoolVar(&Debug, "debug", false, "Enable gin's debug mode.")
+	cmd.Flags().StringVar(&config.Addr, "conf", "0.0.0.0:9000", "ListenAndServe Address.")
+	cmd.Flags().BoolVar(&config.Debug, "debug", false, "Enable gin's debug mode.")
+	cmd.Flags().StringVarP(&config.Namespace, "namespace", "n", "", "The scope of namepsace to manipulate.")
 	flagtools.BindFlags(cmd.PersistentFlags())
 
 	// set global flags using env

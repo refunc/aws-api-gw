@@ -1,0 +1,27 @@
+#!/bin/bash
+
+source ./scripts/common
+
+if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
+    DIRTY="-dirty"
+fi
+
+COMMIT=$(git rev-parse --short HEAD)
+GIT_TAG=$(git tag -l --contains HEAD | head -n 1)
+
+if [[ -z "$DIRTY" && -n "$GIT_TAG" ]]; then
+    VERSION=$GIT_TAG
+    export AWS_AIP_GW_VERSION=${VERSION}
+else
+    _DEPS_VERSION=$(
+        echo \
+        $(get_version $(find pkg -type f -name '*.go'))
+    )
+    export AWS_AIP_GW_VERSION=$(echo $(get_version $(find pkg cmd -type f -name '*.go') package/Dockerfile) | my_sha1sum | cut -c 1-8)${DIRTY}
+fi
+
+IMAGE_REPO=${IMAGE_REPO:-refunc}
+
+export REGISTRY_PREFIX="${IMAGE_REPO}/${IMAGE_PREFIX}"
+
+export AWS_AIP_GW_IMAGE="${REGISTRY_PREFIX}aws-api-gw:${AWS_AIP_GW_VERSION}"

@@ -21,6 +21,6 @@ func CreateFunction(c *gin.Context) {
 	// 	utils.AWSErrorResponse(c, 500, "ServiceException")
 	// 	return
 	// }
-	utils.LogObject(payload)
+	utils.LogObject(c.GetString("region"))
 	c.JSON(http.StatusOK, rsp)
 }
