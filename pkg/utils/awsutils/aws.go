@@ -1,4 +1,4 @@
-package utils
+package awsutils
 
 import (
 	"net/http"

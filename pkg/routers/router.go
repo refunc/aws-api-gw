@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/refunc/aws-api-gw/pkg/controllers"
-	"github.com/refunc/aws-api-gw/pkg/utils"
+	"github.com/refunc/aws-api-gw/pkg/utils/awsutils"
 
 	"github.com/gin-gonic/gin"
 	"github.com/refunc/refunc/pkg/utils/cmdutil/sharedcfg"
@@ -41,23 +41,27 @@ func WithAwsSign(sc sharedcfg.Configs) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authorization := c.Request.Header.Get("Authorization")
 		if authorization == "" {
-			utils.AWSErrorResponse(c, 400, "InvalidAuthorizationException")
+			awsutils.AWSErrorResponse(c, 400, "InvalidAuthorizationException")
 			return
 		}
 		//TODO Verify Authorization Signature
 		matches := reg.FindStringSubmatch(authorization)
 		if len(matches) != 2 {
-			utils.AWSErrorResponse(c, 400, "InvalidCredentialException")
+			awsutils.AWSErrorResponse(c, 400, "InvalidCredentialException")
 			return
 		}
 		credentials := strings.Split(matches[1], "/")
 		if len(credentials) != 5 {
-			utils.AWSErrorResponse(c, 400, "InvalidCredentialException")
+			awsutils.AWSErrorResponse(c, 400, "InvalidCredentialException")
 			return
 		}
 		region := credentials[2]
 		if ns != "" && ns != region {
-			utils.AWSErrorResponse(c, 400, "InvalidRegionException")
+			awsutils.AWSErrorResponse(c, 400, "InvalidRegionException")
+			return
+		}
+		if region == "" {
+			awsutils.AWSErrorResponse(c, 400, "InvalidRegionException")
 			return
 		}
 		c.Set("region", region)
