@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/refunc/aws-api-gw/pkg/apis"
@@ -122,19 +121,14 @@ func CreateFunction(c *gin.Context) {
 		return
 	}
 
+	fnConfiguration, err := FuncdefToLambdaConfiguration(*funcdef)
+	if err != nil {
+		klog.Errorf("funcdef to lambda configuration error %v", err)
+		awsutils.AWSErrorResponse(c, 500, "ServiceException")
+		return
+	}
+
 	c.JSON(http.StatusOK, apis.CreateFunctionResponse{
-		CodeSha256: hash,
-		CodeSize:   codeSize,
-		Environment: apis.FunctionEnvironment{
-			Variables: payload.Environment.Variables,
-		},
-		FunctionName: payload.FunctionName,
-		Handler:      payload.Handler,
-		LastModified: funcdef.CreationTimestamp.Format(time.RFC3339),
-		Version:      LambdaVersion,
-		RevisionId:   funcdef.ResourceVersion,
-		Role:         payload.Role,
-		Runtime:      payload.Runtime,
-		Timeout:      int64(timeout),
+		FunctionConfiguration: fnConfiguration,
 	})
 }

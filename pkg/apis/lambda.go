@@ -25,6 +25,17 @@ type CreateFunctionRequest struct {
 }
 
 type CreateFunctionResponse struct {
+	FunctionConfiguration `json:",inline"`
+}
+
+type GetFunctionResponse struct {
+	Code          map[string]string     `json:"Code"`
+	Concurrency   FunctionConcurrency   `json:"Concurrency"`
+	Configuration FunctionConfiguration `json:"Configuration"`
+	Tags          map[string]string     `json:"Tags"`
+}
+
+type FunctionConfiguration struct {
 	Architectures              []string                    `json:"Architectures"`
 	CodeSha256                 string                      `json:"CodeSha256"`
 	CodeSize                   int64                       `json:"CodeSize"`
@@ -86,4 +97,8 @@ type FunctionVpcConfig struct {
 	SecurityGroupIds []string `json:"SecurityGroupIds"`
 	SubnetIds        []string `json:"SubnetIds"`
 	VpcId            string   `json:"VpcId"`
+}
+
+type FunctionConcurrency struct {
+	Concurrency int64 `json:"Concurrency"`
 }
