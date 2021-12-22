@@ -27,6 +27,7 @@ func GetFunction(c *gin.Context) {
 	region := c.GetString("region")
 	fndef, err := refuncClient.RefuncV1beta3().Funcdeves(region).Get(context.TODO(), functionName, metav1.GetOptions{})
 	if err != nil && !errors.IsNotFound(err) {
+		klog.Errorf("get funcdef error %v", err)
 		awsutils.AWSErrorResponse(c, 500, "ServiceException")
 		return
 	}
@@ -73,6 +74,7 @@ func ListFunction(c *gin.Context) {
 	region := c.GetString("region")
 	fndeves, err := refuncClient.RefuncV1beta3().Funcdeves(region).List(context.TODO(), options)
 	if err != nil && !errors.IsNotFound(err) {
+		klog.Errorf("list funcdef error %v", err)
 		awsutils.AWSErrorResponse(c, 500, "ServiceException")
 		return
 	}

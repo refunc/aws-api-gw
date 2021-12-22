@@ -1,27 +1,27 @@
 package apis
 
 type CreateFunctionRequest struct {
-	Architectures        []string            `json:"Architectures"`
-	Code                 map[string]string   `json:"Code"`
-	CodeSigningConfigArn string              `json:"CodeSigningConfigArn"`
-	DeadLetterConfig     map[string]string   `json:"DeadLetterConfig"`
-	Description          string              `json:"Description"`
-	Environment          FunctionEnvironment `json:"Environment"`
-	FileSystemConfigs    []map[string]string `json:"FileSystemConfigs"`
-	FunctionName         string              `json:"FunctionName"`
-	Handler              string              `json:"Handler"`
-	ImageConfig          FunctionImageConfig `json:"ImageConfig"`
-	KMSKeyArn            string              `json:"KMSKeyArn"`
-	Layers               []string            `json:"Layers"`
-	MemorySize           int64               `json:"MemorySize"`
-	PackageType          string              `json:"PackageType"`
-	Publish              bool                `json:"Publish"`
-	Role                 string              `json:"Role"`
-	Runtime              string              `json:"Runtime"`
-	Tags                 map[string]string   `json:"Tags"`
-	Timeout              int64               `json:"Timeout"`
-	TracingConfig        map[string]string   `json:"TracingConfig"`
-	VpcConfig            FunctionVpcConfig   `json:"VpcConfig"`
+	Architectures        []string          `json:"Architectures"`
+	Code                 map[string]string `json:"Code"`
+	CodeSigningConfigArn string            `json:"CodeSigningConfigArn"`
+	FunctionName         string            `json:"FunctionName"`
+	FunctionRequest      `json:",inline"`
+}
+
+type UpdateFunctionCodeRequest struct {
+	Architectures   []string `json:"Architectures"`
+	DryRun          bool     `json:"DryRun"`
+	ImageUri        string   `json:"ImageUri"`
+	Publish         bool     `json:"Publish"`
+	RevisionId      string   `json:"RevisionId"`
+	S3Bucket        string   `json:"S3Bucket"`
+	S3Key           string   `json:"S3Key"`
+	S3ObjectVersion string   `json:"S3ObjectVersion"`
+	ZipFile         string   `json:"ZipFile"`
+}
+
+type UpdateFunctionConfigurationRequest struct {
+	FunctionRequest `json:",inline"`
 }
 
 type CreateFunctionResponse struct {
@@ -38,6 +38,31 @@ type GetFunctionResponse struct {
 type ListFunctionResponse struct {
 	Functions  []FunctionConfiguration `json:"Functions"`
 	NextMarker string                  `json:"NextMarker,omitempty"`
+}
+
+type UpdateFunctionCodeResponse struct {
+	FunctionConfiguration `json:",inline"`
+}
+
+type FunctionRequest struct {
+	DeadLetterConfig  map[string]string   `json:"DeadLetterConfig"`
+	Description       string              `json:"Description"`
+	Environment       FunctionEnvironment `json:"Environment"`
+	FileSystemConfigs []map[string]string `json:"FileSystemConfigs"`
+	Handler           string              `json:"Handler"`
+	ImageConfig       FunctionImageConfig `json:"ImageConfig"`
+	KMSKeyArn         string              `json:"KMSKeyArn"`
+	Layers            []string            `json:"Layers"`
+	MemorySize        int64               `json:"MemorySize"`
+	PackageType       string              `json:"PackageType,omitempty"`
+	RevisionId        string              `json:"RevisionId,omitempty"`
+	Publish           bool                `json:"Publish,omitempty"`
+	Role              string              `json:"Role"`
+	Runtime           string              `json:"Runtime"`
+	Tags              map[string]string   `json:"Tags,omitempty"`
+	Timeout           int64               `json:"Timeout"`
+	TracingConfig     map[string]string   `json:"TracingConfig"`
+	VpcConfig         FunctionVpcConfig   `json:"VpcConfig"`
 }
 
 type FunctionConfiguration struct {
