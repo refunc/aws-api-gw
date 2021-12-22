@@ -21,6 +21,7 @@ func CreateHTTPRouter(sc sharedcfg.Configs) *gin.Engine {
 	apis := router.Group("/2015-03-31")
 	{
 		apis.POST("/functions", controllers.CreateFunction)
+		apis.GET("/functions/", controllers.ListFunction)
 		apis.GET("/functions/:FunctionName", controllers.GetFunction)
 	}
 	return router

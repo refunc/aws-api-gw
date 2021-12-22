@@ -19,14 +19,17 @@ const (
 func FuncdefToLambdaConfiguration(fndef rfv1beta3.Funcdef) (apis.FunctionConfiguration, error) {
 	custom := map[string]interface{}{}
 	err := json.Unmarshal(fndef.Spec.Custom, &custom)
-	if err != nil {
-		return apis.FunctionConfiguration{}, err
+	var codeSize int64
+	if err == nil {
+		size, ok := custom["codeSize"].(float64)
+		if ok {
+			codeSize = int64(size)
+		}
 	}
-	codeSize := int64(custom["codeSize"].(float64))
 	return apis.FunctionConfiguration{
 		CodeSha256: fndef.Spec.Hash,
 		CodeSize:   codeSize,
-		Environment: apis.FunctionEnvironment{
+		Environment: &apis.FunctionEnvironment{
 			Variables: fndef.Spec.Runtime.Envs,
 		},
 		FunctionName: fndef.Name,

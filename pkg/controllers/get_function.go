@@ -3,6 +3,7 @@ package controllers
 import (
 	"context"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/refunc/aws-api-gw/pkg/apis"
@@ -16,6 +17,7 @@ import (
 func GetFunction(c *gin.Context) {
 	functionName := c.Param("FunctionName")
 	//TODO support get function Qualifier
+
 	refuncClient, err := utils.GetRefuncClient(c)
 	if err != nil {
 		awsutils.AWSErrorResponse(c, 500, "ServiceException")
@@ -45,5 +47,54 @@ func GetFunction(c *gin.Context) {
 			"Location": fndef.Spec.Body,
 		},
 		Configuration: fnConfiguration,
+	})
+}
+
+func ListFunction(c *gin.Context) {
+	//TODO support list function FunctionVersion MasterRegion
+	options := metav1.ListOptions{}
+	limit, err := strconv.Atoi(c.Query("MaxItems"))
+	if err == nil && limit > 0 {
+		options.Limit = int64(limit)
+	}
+	marker := c.Query("Marker")
+	if marker != "" {
+		options.Continue = marker
+	}
+
+	refuncClient, err := utils.GetRefuncClient(c)
+	if err != nil {
+		awsutils.AWSErrorResponse(c, 500, "ServiceException")
+		return
+	}
+
+	utils.LogObject(options)
+
+	region := c.GetString("region")
+	fndeves, err := refuncClient.RefuncV1beta3().Funcdeves(region).List(context.TODO(), options)
+	if err != nil && !errors.IsNotFound(err) {
+		awsutils.AWSErrorResponse(c, 500, "ServiceException")
+		return
+	}
+	if errors.IsNotFound(err) {
+		awsutils.AWSErrorResponse(c, 404, "ResourceNotFoundException")
+		return
+	}
+
+	functions := []apis.FunctionConfiguration{}
+
+	for _, fndef := range fndeves.Items {
+		fnConfiguration, err := FuncdefToLambdaConfiguration(fndef)
+		if err != nil {
+			klog.Errorf("funcdef to lambda configuration error %v", err)
+			awsutils.AWSErrorResponse(c, 500, "ServiceException")
+			return
+		}
+		functions = append(functions, fnConfiguration)
+	}
+
+	c.JSON(http.StatusOK, apis.ListFunctionResponse{
+		Functions:  functions,
+		NextMarker: fndeves.ListMeta.Continue,
 	})
 }
