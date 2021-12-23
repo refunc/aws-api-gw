@@ -1,13 +1,17 @@
 package routers
 
 import (
+	"os"
 	"regexp"
 	"strings"
 
+	nats "github.com/nats-io/nats.go"
 	"github.com/refunc/aws-api-gw/pkg/controllers"
 	"github.com/refunc/aws-api-gw/pkg/utils/awsutils"
+	"k8s.io/klog/v2"
 
 	"github.com/gin-gonic/gin"
+	"github.com/refunc/refunc/pkg/env"
 	"github.com/refunc/refunc/pkg/utils/cmdutil/sharedcfg"
 )
 
@@ -26,6 +30,7 @@ func CreateHTTPRouter(sc sharedcfg.Configs) *gin.Engine {
 		apis.DELETE("/functions/:FunctionName", controllers.DeleteFunction)
 		apis.PUT("/functions/:FunctionName/code", controllers.UpdateFunctionCode)
 		apis.PUT("/functions/:FunctionName/configuration", controllers.UpdateFunctionConfiguration)
+		apis.POST("/functions/:FunctionName/invocations", controllers.InvokeFunction)
 	}
 	return router
 }
@@ -33,9 +38,18 @@ func CreateHTTPRouter(sc sharedcfg.Configs) *gin.Engine {
 func WithClientSet(sc sharedcfg.Configs) gin.HandlerFunc {
 	kubeClient := sc.KubeClient()
 	refuncClient := sc.RefuncClient()
+	hostname, err := os.Hostname()
+	if err != nil {
+		klog.Fatalf("get hostname error %v", err)
+	}
+	natsConn, err := env.NewNatsConn(nats.Name(os.Getenv("aws-api-gw") + "/" + hostname))
+	if err != nil {
+		klog.Fatalf("connect to nats error %v", err)
+	}
 	return func(c *gin.Context) {
 		c.Set("kc", kubeClient)
 		c.Set("rc", refuncClient)
+		c.Set("nats", natsConn)
 		c.Next()
 	}
 }

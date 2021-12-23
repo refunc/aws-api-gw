@@ -9,9 +9,15 @@ import (
 )
 
 const (
-	LambdaVersion          = "0" //TODO support lambda version apis
-	LambdaLabelAutoCreated = "lambda.refunc.io/auto-created"
-	TriggerType            = "httptrigger"
+	LambdaVersion            = "0" //TODO support lambda version apis
+	LambdaLabelAutoCreated   = "lambda.refunc.io/auto-created"
+	TriggerType              = "httptrigger"
+	HeaderAmzInvocationType  = "X-Amz-Invocation-Type"
+	HeaderAmzLogType         = "X-Amz-Log-Type"
+	HeaderAmzClientContext   = "X-Amz-Client-Context"
+	HeaderAmzFunctionError   = "X-Amz-Function-Error"
+	HeaderAmzLogResult       = "X-Amz-Log-Result"
+	HeaderAmzExecutedVersion = "X-Amz-Executed-Version"
 )
 
 func FuncdefToLambdaConfiguration(fndef rfv1beta3.Funcdef) (apis.FunctionConfiguration, error) {

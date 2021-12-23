@@ -69,8 +69,6 @@ func ListFunction(c *gin.Context) {
 		return
 	}
 
-	utils.LogObject(options)
-
 	region := c.GetString("region")
 	fndeves, err := refuncClient.RefuncV1beta3().Funcdeves(region).List(context.TODO(), options)
 	if err != nil && !errors.IsNotFound(err) {
