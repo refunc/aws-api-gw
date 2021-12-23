@@ -48,10 +48,11 @@ func CreateFunction(c *gin.Context) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      payload.FunctionName,
 			Namespace: region,
-			Annotations: map[string]string{
-				LambdaLabelName:    payload.FunctionName,
-				LambdaLabelVersion: LambdaVersion,
+			Labels: map[string]string{
+				rfv1beta3.LabelLambdaName:    payload.FunctionName,
+				rfv1beta3.LabelLambdaVersion: LambdaVersion,
 			},
+			Annotations: map[string]string{},
 		},
 		Spec: rfv1beta3.FuncdefSpec{
 			Body:  body,
