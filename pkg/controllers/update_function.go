@@ -80,3 +80,63 @@ func UpdateFunctionCode(c *gin.Context) {
 		FunctionConfiguration: fnConfiguration,
 	})
 }
+
+func UpdateFunctionConfiguration(c *gin.Context) {
+	functionName := c.Param("FunctionName")
+	var payload apis.UpdateFunctionConfigurationRequest
+	if err := c.BindJSON(&payload); err != nil {
+		awsutils.AWSErrorResponse(c, 400, "InvalidParameterValueException")
+		return
+	}
+
+	refuncClient, err := utils.GetRefuncClient(c)
+	if err != nil {
+		awsutils.AWSErrorResponse(c, 500, "ServiceException")
+		return
+	}
+
+	region := c.GetString("region")
+	fndef, err := refuncClient.RefuncV1beta3().Funcdeves(region).Get(context.TODO(), functionName, metav1.GetOptions{})
+	if err != nil && !errors.IsNotFound(err) {
+		klog.Errorf("get funcdef error %v", err)
+		awsutils.AWSErrorResponse(c, 500, "ServiceException")
+		return
+	}
+	if errors.IsNotFound(err) {
+		awsutils.AWSErrorResponse(c, 404, "ResourceNotFoundException")
+		return
+	}
+
+	// update function configuration
+	if payload.Handler != "" {
+		fndef.Spec.Entry = payload.Handler
+	}
+	if payload.Runtime != "" {
+		fndef.Spec.Runtime.Name = payload.Runtime
+	}
+	if payload.Timeout > 0 {
+		fndef.Spec.Runtime.Timeout = int(payload.Timeout)
+	}
+	if payload.Environment.Variables != nil && len(payload.Environment.Variables) > 0 {
+		fndef.Spec.Runtime.Envs = payload.Environment.Variables
+	}
+
+	// apply funcdef
+	fndef, err = refuncClient.RefuncV1beta3().Funcdeves(region).Update(context.TODO(), fndef, metav1.UpdateOptions{})
+	if err != nil {
+		klog.Errorf("update funcdef configuration error %v", err)
+		awsutils.AWSErrorResponse(c, 500, "ServiceException")
+		return
+	}
+
+	fnConfiguration, err := FuncdefToLambdaConfiguration(*fndef)
+	if err != nil {
+		klog.Errorf("funcdef to lambda configuration error %v", err)
+		awsutils.AWSErrorResponse(c, 500, "ServiceException")
+		return
+	}
+
+	c.JSON(http.StatusOK, apis.UpdateFunctionCodeResponse{
+		FunctionConfiguration: fnConfiguration,
+	})
+}

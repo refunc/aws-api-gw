@@ -24,6 +24,7 @@ func CreateHTTPRouter(sc sharedcfg.Configs) *gin.Engine {
 		apis.GET("/functions/", controllers.ListFunction)
 		apis.GET("/functions/:FunctionName", controllers.GetFunction)
 		apis.PUT("/functions/:FunctionName/code", controllers.UpdateFunctionCode)
+		apis.PUT("/functions/:FunctionName/configuration", controllers.UpdateFunctionConfiguration)
 	}
 	return router
 }
