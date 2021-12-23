@@ -1,0 +1,3 @@
+FROM golang:1.15.10
+
+WORKDIR /github.com/refunc/aws-api-gw
