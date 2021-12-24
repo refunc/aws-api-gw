@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/minio/minio-go"
 	"github.com/refunc/refunc/pkg/env"
@@ -53,5 +54,5 @@ func setFunctionBlobCode(S3KeyPrefix, blob string) (string, int64, string, error
 	if putSize != size {
 		return "", 0, "", errors.New("put code blob error")
 	}
-	return fmt.Sprintf("s3://%s%s", env.GlobalBucket, key), size, etag, nil
+	return fmt.Sprintf("s3://%s/%s", env.GlobalBucket, strings.TrimPrefix(key, "/")), size, etag, nil
 }
