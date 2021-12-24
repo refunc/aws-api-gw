@@ -61,26 +61,31 @@ func WithAwsSign(sc sharedcfg.Configs) gin.HandlerFunc {
 		authorization := c.Request.Header.Get("Authorization")
 		if authorization == "" {
 			awsutils.AWSErrorResponse(c, 400, "InvalidAuthorizationException")
+			c.Abort()
 			return
 		}
 		//TODO Verify Authorization Signature
 		matches := reg.FindStringSubmatch(authorization)
 		if len(matches) != 2 {
 			awsutils.AWSErrorResponse(c, 400, "InvalidCredentialException")
+			c.Abort()
 			return
 		}
 		credentials := strings.Split(matches[1], "/")
 		if len(credentials) != 5 {
 			awsutils.AWSErrorResponse(c, 400, "InvalidCredentialException")
+			c.Abort()
 			return
 		}
 		region := credentials[2]
 		if ns != "" && ns != region {
 			awsutils.AWSErrorResponse(c, 400, "InvalidRegionException")
+			c.Abort()
 			return
 		}
 		if region == "" {
 			awsutils.AWSErrorResponse(c, 400, "InvalidRegionException")
+			c.Abort()
 			return
 		}
 		c.Set("region", region)
