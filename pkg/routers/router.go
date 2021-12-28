@@ -8,6 +8,7 @@ import (
 	nats "github.com/nats-io/nats.go"
 	"github.com/refunc/aws-api-gw/pkg/controllers"
 	"github.com/refunc/aws-api-gw/pkg/utils/awsutils"
+	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog/v2"
 
 	"github.com/gin-gonic/gin"
@@ -15,13 +16,13 @@ import (
 	"github.com/refunc/refunc/pkg/utils/cmdutil/sharedcfg"
 )
 
-func CreateHTTPRouter(sc sharedcfg.Configs) *gin.Engine {
+func CreateHTTPRouter(sc sharedcfg.Configs, stopC <-chan struct{}) *gin.Engine {
 
 	router := gin.New()
 	router.Use(gin.Logger())
 	router.Use(gin.Recovery())
+	router.Use(WithClientSet(sc, stopC))
 	router.Use(WithAwsSign(sc))
-	router.Use(WithClientSet(sc))
 	apis := router.Group("/2015-03-31")
 	{
 		apis.POST("/functions", controllers.CreateFunction)
@@ -35,9 +36,23 @@ func CreateHTTPRouter(sc sharedcfg.Configs) *gin.Engine {
 	return router
 }
 
-func WithClientSet(sc sharedcfg.Configs) gin.HandlerFunc {
+func WithClientSet(sc sharedcfg.Configs, stopC <-chan struct{}) gin.HandlerFunc {
 	kubeClient := sc.KubeClient()
 	refuncClient := sc.RefuncClient()
+	//kubeInformerFactory := sc.KubeInformers()
+	refuncInformers := sc.RefuncInformers()
+	refuncFundefLister := refuncInformers.Refunc().V1beta3().Funcdeves().Lister()
+	wantedInformers := []cache.InformerSynced{
+		refuncInformers.Refunc().V1beta3().Funcdeves().Informer().HasSynced,
+	}
+
+	go func() {
+		if !cache.WaitForCacheSync(stopC, wantedInformers...) {
+			klog.Fatalln("Fail wait for cache sync")
+		}
+		klog.Infoln("Success sync informer cache")
+	}()
+
 	hostname, err := os.Hostname()
 	if err != nil {
 		klog.Fatalf("get hostname error %v", err)
@@ -49,6 +64,7 @@ func WithClientSet(sc sharedcfg.Configs) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Set("kc", kubeClient)
 		c.Set("rc", refuncClient)
+		c.Set("funcdefLister", refuncFundefLister)
 		c.Set("nats", natsConn)
 		c.Next()
 	}

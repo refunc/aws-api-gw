@@ -15,7 +15,6 @@ import (
 	"github.com/refunc/refunc/pkg/messages"
 	rfutils "github.com/refunc/refunc/pkg/utils"
 	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
 )
 
@@ -29,20 +28,22 @@ func InvokeFunction(c *gin.Context) {
 		return
 	}
 
-	refuncClient, err := utils.GetRefuncClient(c)
+	funcdefLister, err := utils.GetFuncdefLister(c)
 	if err != nil {
+		klog.Error(err)
 		awsutils.AWSErrorResponse(c, 500, "ServiceException")
 		return
 	}
 
 	natsConn, err := utils.GetNatsConn(c)
 	if err != nil {
+		klog.Error(err)
 		awsutils.AWSErrorResponse(c, 500, "ServiceException")
 		return
 	}
 
 	region := c.GetString("region")
-	fndef, err := refuncClient.RefuncV1beta3().Funcdeves(region).Get(context.TODO(), functionName, metav1.GetOptions{})
+	fndef, err := funcdefLister.Funcdeves(region).Get(functionName)
 	if err != nil && !errors.IsNotFound(err) {
 		klog.Errorf("get funcdef error %v", err)
 		awsutils.AWSErrorResponse(c, 500, "ServiceException")
@@ -93,7 +94,6 @@ func invokeRequestResponse(c *gin.Context, natsConn *nats.Conn, args json.RawMes
 	}
 	logStream := taskr.LogObserver()
 	var logs []byte
-	timer := time.After(time.Duration(fndef.Spec.Runtime.Timeout) * time.Second)
 	for {
 		select {
 		case <-logStream.Changes():
@@ -116,13 +116,6 @@ func invokeRequestResponse(c *gin.Context, natsConn *nats.Conn, args json.RawMes
 				c.Header(HeaderAmzLogResult, string(logs))
 			}
 			c.Writer.Write(bts)
-			return
-		case <-timer:
-			c.Status(504)
-			c.Header(HeaderAmzExecutedVersion, LambdaVersion)
-			if logType == "Tail" {
-				c.Header(HeaderAmzLogResult, string(logs))
-			}
 			return
 		}
 	}
