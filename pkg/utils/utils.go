@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/nats-io/nats.go"
 	rfclientset "github.com/refunc/refunc/pkg/generated/clientset/versioned"
+	rflister "github.com/refunc/refunc/pkg/generated/listers/refunc/v1beta3"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
 )
@@ -30,6 +31,14 @@ func GetRefuncClient(c *gin.Context) (rfclientset.Interface, error) {
 		return nil, errors.New("get refuncClient error")
 	}
 	return kc.(rfclientset.Interface), nil
+}
+
+func GetFuncdefLister(c *gin.Context) (rflister.FuncdefLister, error) {
+	fndefLister, ok := c.Get("funcdefLister")
+	if !ok {
+		return nil, errors.New("get funcdef lister error")
+	}
+	return fndefLister.(rflister.FuncdefLister), nil
 }
 
 func GetNatsConn(c *gin.Context) (*nats.Conn, error) {
