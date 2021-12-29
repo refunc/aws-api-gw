@@ -12,6 +12,14 @@ const (
 	awsV4Request     = "aws4_request"
 )
 
+var (
+	signSkipHeaders = map[string]string{
+		"authorization":   "",
+		"content-length":  "",
+		"accept-encoding": "",
+	}
+)
+
 type Config struct {
 	Rbac bool
 }
