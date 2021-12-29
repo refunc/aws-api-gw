@@ -1,7 +1,7 @@
 package routers
 
 import (
-	"encoding/base64"
+	"bytes"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -160,14 +160,32 @@ func WithAwsSign(sc sharedcfg.Configs, rbac bool) gin.HandlerFunc {
 				c.Abort()
 				return
 			}
+			accessSecret := string(tokenBts)
+
+			//copy origin body bytes
+			bodyBts, err := ioutil.ReadAll(c.Request.Body)
+			if err != nil {
+				klog.Error(err)
+				awsutils.AWSErrorResponse(c, 500, "ServiceException")
+				c.Abort()
+				return
+			}
+			c.Request.Body = ioutil.NopCloser(bytes.NewReader(bodyBts))
 
 			//verify aws signature without body sha256
-			accessSecret := base64.StdEncoding.EncodeToString(tokenBts)
-
 			signer := awsSigner.NewSigner(awsCredentials.NewStaticCredentials(accessKeyID, accessSecret, ""))
-			signReq, _ := http.NewRequest(c.Request.Method, c.Request.URL.String(), ioutil.NopCloser(nil))
+			signReq, _ := http.NewRequest(c.Request.Method, c.Request.URL.String(), nil)
 			signReq.URL, signReq.Host = c.Request.URL, c.Request.Host
-			_, err = signer.Sign(signReq, nil, "lambda", region, dt)
+			for k := range c.Request.Header {
+				if _, ok := allowSignHeaders[k]; !(ok || strings.HasPrefix(k, "X-Amz-Meta-") || strings.HasPrefix(k, "X-Amz-Object-Lock-")) {
+					continue
+				}
+				signReq.Header.Set(k, c.Request.Header.Get(k))
+			}
+
+			//signer.Debug = aws.LogDebugWithSigning
+			//signer.Logger = aws.NewDefaultLogger()
+			_, err = signer.Sign(signReq, bytes.NewReader(bodyBts), "lambda", region, dt)
 			if err != nil {
 				klog.Error(err)
 				awsutils.AWSErrorResponse(c, 400, "InvalidCredentialException")
