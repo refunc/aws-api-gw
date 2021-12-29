@@ -177,8 +177,7 @@ func WithAwsSign(sc sharedcfg.Configs, rbac bool) gin.HandlerFunc {
 			signReq, _ := http.NewRequest(c.Request.Method, c.Request.URL.String(), nil)
 			signReq.URL, signReq.Host = c.Request.URL, c.Request.Host
 			for k := range c.Request.Header {
-				header := strings.ToLower(k)
-				if _, ok := signSkipHeaders[header]; ok || strings.HasPrefix(header, "x-amz-") {
+				if _, ok := allowSignHeaders[k]; !(ok || strings.HasPrefix(k, "X-Amz-Meta-") || strings.HasPrefix(k, "X-Amz-Object-Lock-")) {
 					continue
 				}
 				signReq.Header.Set(k, c.Request.Header.Get(k))
