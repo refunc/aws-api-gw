@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/gin-gonic/gin"
+	"github.com/refunc/aws-api-gw/pkg/services"
 	"github.com/refunc/aws-api-gw/pkg/utils"
 	"github.com/refunc/aws-api-gw/pkg/utils/awsutils"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -39,5 +40,13 @@ func DeleteFunction(c *gin.Context) {
 		awsutils.AWSErrorResponse(c, 500, "ServiceException")
 		return
 	}
+
+	err = services.DelFunctionCode(fndef.Spec.Body)
+	if err != nil {
+		klog.Errorf("delete funcdef error %v", err)
+		awsutils.AWSErrorResponse(c, 500, "ServiceException")
+		return
+	}
+
 	c.AbortWithStatus(204)
 }
