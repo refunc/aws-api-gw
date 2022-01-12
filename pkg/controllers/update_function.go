@@ -57,6 +57,14 @@ func UpdateFunctionCode(c *gin.Context) {
 		awsutils.AWSErrorResponse(c, 500, "ServiceException")
 		return
 	}
+	if body != fndef.Spec.Body {
+		originBody := fndef.Spec.Body
+		go func() {
+			if err := services.DelFunctionCode(originBody); err != nil {
+				klog.Errorf("del function code error %v", err)
+			}
+		}()
+	}
 	fndef.Spec.Body = body
 	fndef.Spec.Hash = hash
 	fndef.Spec.Custom = json.RawMessage(fmt.Sprintf(`{"codeSize":%d}`, codeSize))

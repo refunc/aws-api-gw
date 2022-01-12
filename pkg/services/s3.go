@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"net/url"
 	"strings"
 
 	"github.com/minio/minio-go"
@@ -55,4 +56,17 @@ func setFunctionBlobCode(S3KeyPrefix, blob string) (string, int64, string, error
 		return "", 0, "", errors.New("put code blob error")
 	}
 	return fmt.Sprintf("s3://%s/%s", env.GlobalBucket, strings.TrimPrefix(key, "/")), size, etag, nil
+}
+
+func DelFunctionCode(body string) error {
+	if strings.HasPrefix(body, "s3://") || strings.HasPrefix(body, "minio://") {
+		mc := env.GlobalMinioClient()
+		u, err := url.Parse(body)
+		if err != nil {
+			return err
+		}
+		bucket := u.Host
+		return mc.RemoveObject(bucket, strings.TrimLeft(u.Path, "/"))
+	}
+	return fmt.Errorf("not support body %s", body)
 }
