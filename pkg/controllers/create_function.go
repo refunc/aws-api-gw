@@ -16,6 +16,7 @@ import (
 	rfv1beta3 "github.com/refunc/refunc/pkg/apis/refunc/v1beta3"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/klog/v2"
 )
 
@@ -25,6 +26,12 @@ func CreateFunction(c *gin.Context) {
 		awsutils.AWSErrorResponse(c, 400, "InvalidParameterValueException")
 		return
 	}
+
+	if errs := validation.IsDNS1123Label(payload.FunctionName); len(errs) > 0 {
+		awsutils.AWSErrorResponse(c, 400, "InvalidFunctionNameException")
+		return
+	}
+
 	refuncClient, err := utils.GetRefuncClient(c)
 	if err != nil {
 		awsutils.AWSErrorResponse(c, 500, "ServiceException")
