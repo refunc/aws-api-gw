@@ -1,9 +1,9 @@
 package controllers
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -104,16 +104,16 @@ func invokeRequestResponse(c *gin.Context, natsConn *nats.Conn, args json.RawMes
 		case <-taskr.Done():
 			bts, err := taskr.Result()
 			if err != nil {
-				c.Status(500)
-				c.Header(HeaderAmzFunctionError, fmt.Sprintf("%v", err))
-				c.Header(HeaderAmzExecutedVersion, LambdaVersion)
-				c.Abort()
-				return
+				bts = messages.GetErrActionBytes(err)
 			}
 			c.Status(200)
 			c.Header(HeaderAmzExecutedVersion, LambdaVersion)
 			if logType == "Tail" {
 				c.Header(HeaderAmzLogResult, string(logs))
+			}
+			// append \n split func result and aws api cli echo
+			if !bytes.HasSuffix(bts, []byte{'\n'}) {
+				bts = append(bts, '\n')
 			}
 			c.Writer.Write(bts)
 			return
