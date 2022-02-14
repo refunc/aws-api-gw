@@ -17,7 +17,7 @@ else
         echo \
         $(get_version $(find pkg -type f -name '*.go'))
     )
-    export AWS_AIP_GW_VERSION=$(echo $(get_version $(find pkg cmd -type f -name '*.go') package/Dockerfile) | my_sha1sum | cut -c 1-8)${DIRTY}
+    export AWS_AIP_GW_VERSION=$(echo $(get_version $(find pkg cmd -type f -name '*.go') package/Dockerfile go.mod go.sum) | my_sha1sum | cut -c 1-8)${DIRTY}
 fi
 
 IMAGE_REPO=${IMAGE_REPO:-refunc}
