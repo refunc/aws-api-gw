@@ -8,7 +8,7 @@ require (
 	github.com/gin-gonic/gin v1.7.7
 	github.com/minio/minio-go v6.0.14+incompatible
 	github.com/nats-io/nats.go v1.13.0
-	github.com/refunc/refunc v0.0.0-20220214065020-fba09718ad35
+	github.com/refunc/refunc v0.0.0-20220510022424-1eaa6e4279d4
 	github.com/spf13/cobra v1.3.0
 	k8s.io/apimachinery v0.20.2
 	k8s.io/client-go v0.20.2
