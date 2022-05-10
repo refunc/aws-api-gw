@@ -53,6 +53,7 @@ var (
 		"X-Amz-Tagging":                                               {},
 		"X-Amz-Website-Redirect-Location":                             {},
 		"X-Amz-Content-Sha256":                                        {},
+		"X-Amz-Log-Type":                                              {},
 	}
 )
 

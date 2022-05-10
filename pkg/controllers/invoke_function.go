@@ -1,8 +1,8 @@
 package controllers
 
 import (
-	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"time"
 
@@ -73,6 +73,8 @@ func InvokeFunction(c *gin.Context) {
 	}
 }
 
+var TailLogSize = 4096 //4KB
+
 func invokeRequestResponse(c *gin.Context, natsConn *nats.Conn, args json.RawMessage, logType string, fndef *rfv1beta3.Funcdef) {
 	request := &messages.InvokeRequest{
 		Args:      args,
@@ -85,7 +87,10 @@ func invokeRequestResponse(c *gin.Context, natsConn *nats.Conn, args json.RawMes
 	ctx = client.WithLogger(ctx, klog.V(1))
 	ctx = client.WithNatsConn(ctx, natsConn)
 	ctx = client.WithTimeoutHint(ctx, time.Duration(fndef.Spec.Runtime.Timeout)*time.Second)
-	ctx = client.WithLoggingHint(ctx, true)
+	ctx = client.WithLoggingHint(ctx, false)
+	if logType == "Tail" {
+		ctx = client.WithLoggingHint(ctx, true)
+	}
 	taskr, err := client.NewTaskResolver(ctx, endpoint, request)
 	if err != nil {
 		klog.Error(err)
@@ -109,11 +114,13 @@ func invokeRequestResponse(c *gin.Context, natsConn *nats.Conn, args json.RawMes
 			c.Status(200)
 			c.Header(HeaderAmzExecutedVersion, LambdaVersion)
 			if logType == "Tail" {
-				c.Header(HeaderAmzLogResult, string(logs))
-			}
-			// append \n split func result and aws api cli echo
-			if !bytes.HasSuffix(bts, []byte{'\n'}) {
-				bts = append(bts, '\n')
+				logStr := ""
+				if len(logs) > TailLogSize {
+					logStr = base64.RawStdEncoding.EncodeToString(logs[len(logs)-4096:])
+				} else {
+					logStr = base64.RawStdEncoding.EncodeToString(logs)
+				}
+				c.Header(HeaderAmzLogResult, logStr)
 			}
 			c.Writer.Write(bts)
 			return
