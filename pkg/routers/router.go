@@ -10,7 +10,7 @@ import (
 	"time"
 
 	nats "github.com/nats-io/nats.go"
-	"github.com/refunc/aws-api-gw/pkg/controllers"
+	"github.com/refunc/aws-api-gw/pkg/controllers/functions"
 	"github.com/refunc/aws-api-gw/pkg/utils/awsutils"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog/v2"
@@ -32,13 +32,13 @@ func CreateHTTPRouter(sc sharedcfg.Configs, cfg Config, stopC <-chan struct{}) *
 	router.Use(WithAwsSign(sc, cfg.Rbac))
 	apis := router.Group("/2015-03-31")
 	{
-		apis.POST("/functions", controllers.CreateFunction)
-		apis.GET("/functions/", controllers.ListFunction)
-		apis.GET("/functions/:FunctionName", controllers.GetFunction)
-		apis.DELETE("/functions/:FunctionName", controllers.DeleteFunction)
-		apis.PUT("/functions/:FunctionName/code", controllers.UpdateFunctionCode)
-		apis.PUT("/functions/:FunctionName/configuration", controllers.UpdateFunctionConfiguration)
-		apis.POST("/functions/:FunctionName/invocations", controllers.InvokeFunction)
+		apis.POST("/functions", functions.CreateFunction)
+		apis.GET("/functions/", functions.ListFunction)
+		apis.GET("/functions/:FunctionName", functions.GetFunction)
+		apis.DELETE("/functions/:FunctionName", functions.DeleteFunction)
+		apis.PUT("/functions/:FunctionName/code", functions.UpdateFunctionCode)
+		apis.PUT("/functions/:FunctionName/configuration", functions.UpdateFunctionConfiguration)
+		apis.POST("/functions/:FunctionName/invocations", functions.InvokeFunction)
 	}
 	return router
 }

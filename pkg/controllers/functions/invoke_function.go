@@ -1,4 +1,4 @@
-package controllers
+package functions
 
 import (
 	"context"
@@ -8,6 +8,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	nats "github.com/nats-io/nats.go"
+	"github.com/refunc/aws-api-gw/pkg/controllers"
 	"github.com/refunc/aws-api-gw/pkg/utils"
 	"github.com/refunc/aws-api-gw/pkg/utils/awsutils"
 	rfv1beta3 "github.com/refunc/refunc/pkg/apis/refunc/v1beta3"
@@ -54,12 +55,12 @@ func InvokeFunction(c *gin.Context) {
 		return
 	}
 
-	invocationType := c.GetHeader(HeaderAmzInvocationType)
+	invocationType := c.GetHeader(controllers.HeaderAmzInvocationType)
 	if invocationType == "" {
 		invocationType = "RequestResponse"
 	}
 	if invocationType == "RequestResponse" {
-		logType := c.GetHeader(HeaderAmzLogType)
+		logType := c.GetHeader(controllers.HeaderAmzLogType)
 		if logType != "Tail" {
 			logType = "None"
 		}
@@ -112,7 +113,7 @@ func invokeRequestResponse(c *gin.Context, natsConn *nats.Conn, args json.RawMes
 				bts = messages.GetErrActionBytes(err)
 			}
 			c.Status(200)
-			c.Header(HeaderAmzExecutedVersion, LambdaVersion)
+			c.Header(controllers.HeaderAmzExecutedVersion, controllers.LambdaVersion)
 			if logType == "Tail" {
 				logStr := ""
 				if len(logs) > TailLogSize {
@@ -120,7 +121,7 @@ func invokeRequestResponse(c *gin.Context, natsConn *nats.Conn, args json.RawMes
 				} else {
 					logStr = base64.RawStdEncoding.EncodeToString(logs)
 				}
-				c.Header(HeaderAmzLogResult, logStr)
+				c.Header(controllers.HeaderAmzLogResult, logStr)
 			}
 			c.Writer.Write(bts)
 			return

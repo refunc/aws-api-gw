@@ -1,4 +1,4 @@
-package controllers
+package functions
 
 import (
 	"context"
@@ -9,6 +9,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/refunc/aws-api-gw/pkg/apis"
+	"github.com/refunc/aws-api-gw/pkg/controllers"
 	"github.com/refunc/aws-api-gw/pkg/services"
 	"github.com/refunc/aws-api-gw/pkg/utils"
 	"github.com/refunc/aws-api-gw/pkg/utils/awsutils"
@@ -57,7 +58,7 @@ func CreateFunction(c *gin.Context) {
 			Namespace: region,
 			Labels: map[string]string{
 				rfv1beta3.LabelLambdaName:    payload.FunctionName,
-				rfv1beta3.LabelLambdaVersion: LambdaVersion,
+				rfv1beta3.LabelLambdaVersion: controllers.LambdaVersion,
 			},
 			Annotations: map[string]string{},
 		},
@@ -90,7 +91,7 @@ func CreateFunction(c *gin.Context) {
 			Namespace: funcdef.Namespace,
 			Name:      triggerName,
 			Labels: map[string]string{
-				LambdaLabelAutoCreated: "true",
+				controllers.LambdaLabelAutoCreated: "true",
 			},
 			Annotations: map[string]string{
 				rfv1beta3.AnnotationRPCVer: "v2",
@@ -105,7 +106,7 @@ func CreateFunction(c *gin.Context) {
 			},
 		},
 		Spec: rfv1beta3.TriggerSpec{
-			Type:     TriggerType,
+			Type:     controllers.TriggerType,
 			FuncName: funcdef.Name,
 		},
 	}
@@ -129,7 +130,7 @@ func CreateFunction(c *gin.Context) {
 		return
 	}
 
-	fnConfiguration, err := FuncdefToLambdaConfiguration(*funcdef)
+	fnConfiguration, err := controllers.FuncdefToLambdaConfiguration(*funcdef)
 	if err != nil {
 		klog.Errorf("funcdef to lambda configuration error %v", err)
 		awsutils.AWSErrorResponse(c, 500, "ServiceException")
