@@ -11,6 +11,7 @@ import (
 
 	nats "github.com/nats-io/nats.go"
 	"github.com/refunc/aws-api-gw/pkg/controllers/functions"
+	"github.com/refunc/aws-api-gw/pkg/controllers/urls"
 	"github.com/refunc/aws-api-gw/pkg/utils/awsutils"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog/v2"
@@ -30,15 +31,19 @@ func CreateHTTPRouter(sc sharedcfg.Configs, cfg Config, stopC <-chan struct{}) *
 	router.Use(gin.Recovery())
 	router.Use(WithClientSet(sc, stopC))
 	router.Use(WithAwsSign(sc, cfg.Rbac))
-	apis := router.Group("/2015-03-31")
+	functionApis := router.Group("/2015-03-31")
 	{
-		apis.POST("/functions", functions.CreateFunction)
-		apis.GET("/functions/", functions.ListFunction)
-		apis.GET("/functions/:FunctionName", functions.GetFunction)
-		apis.DELETE("/functions/:FunctionName", functions.DeleteFunction)
-		apis.PUT("/functions/:FunctionName/code", functions.UpdateFunctionCode)
-		apis.PUT("/functions/:FunctionName/configuration", functions.UpdateFunctionConfiguration)
-		apis.POST("/functions/:FunctionName/invocations", functions.InvokeFunction)
+		functionApis.POST("/functions", functions.CreateFunction)
+		functionApis.GET("/functions/", functions.ListFunction)
+		functionApis.GET("/functions/:FunctionName", functions.GetFunction)
+		functionApis.DELETE("/functions/:FunctionName", functions.DeleteFunction)
+		functionApis.PUT("/functions/:FunctionName/code", functions.UpdateFunctionCode)
+		functionApis.PUT("/functions/:FunctionName/configuration", functions.UpdateFunctionConfiguration)
+		functionApis.POST("/functions/:FunctionName/invocations", functions.InvokeFunction)
+	}
+	urlApis := router.Group("/2021-10-31")
+	{
+		urlApis.GET("/functions/:FunctionName/url", urls.GetURL)
 	}
 	return router
 }
