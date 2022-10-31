@@ -45,6 +45,9 @@ func CreateHTTPRouter(sc sharedcfg.Configs, cfg Config, stopC <-chan struct{}) *
 	{
 		urlApis.GET("/functions/:FunctionName/url", urls.GetURL)
 		urlApis.GET("/functions/:FunctionName/urls", urls.ListURL)
+		urlApis.POST("/functions/:FunctionName/url", urls.CreateURL)
+		urlApis.PUT("/functions/:FunctionName/url", urls.UpdateURL)
+		urlApis.DELETE("/functions/:FunctionName/url", urls.DeleteURL)
 	}
 	return router
 }

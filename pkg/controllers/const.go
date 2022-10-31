@@ -12,7 +12,7 @@ import (
 const (
 	LambdaVersion            = "0" //TODO support lambda version apis
 	LambdaLabelAutoCreated   = "lambda.refunc.io/auto-created"
-	TriggerType              = "httptrigger"
+	HTTPTriggerType          = "httptrigger"
 	HeaderAmzInvocationType  = "X-Amz-Invocation-Type"
 	HeaderAmzLogType         = "X-Amz-Log-Type"
 	HeaderAmzClientContext   = "X-Amz-Client-Context"
