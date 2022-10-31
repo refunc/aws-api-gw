@@ -44,6 +44,7 @@ func CreateHTTPRouter(sc sharedcfg.Configs, cfg Config, stopC <-chan struct{}) *
 	urlApis := router.Group("/2021-10-31")
 	{
 		urlApis.GET("/functions/:FunctionName/url", urls.GetURL)
+		urlApis.GET("/functions/:FunctionName/urls", urls.ListURL)
 	}
 	return router
 }

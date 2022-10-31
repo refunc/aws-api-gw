@@ -1,5 +1,10 @@
 package apis
 
+type ListURLResponse struct {
+	FunctionUrlConfigs []FunctionURLConfig `json:"FunctionUrlConfigs"`
+	NextMarker         string              `json:"NextMarker,omitempty"`
+}
+
 type FunctionURLConfig struct {
 	AuthType         string  `json:"AuthType"`
 	Cors             URLCors `json:"Cors,omitempty"`
