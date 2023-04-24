@@ -105,7 +105,6 @@ func invokeRequestResponse(c *gin.Context, natsConn *nats.Conn, args json.RawMes
 		case <-logStream.Changes():
 			for logStream.HasNext() {
 				logs = append(logs, []byte(logStream.Next().(string))...)
-				logs = append(logs, messages.TokenCRLF...)
 			}
 		case <-taskr.Done():
 			bts, err := taskr.Result()
