@@ -1,4 +1,4 @@
-package controllers
+package functions
 
 import (
 	"context"
@@ -8,6 +8,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/refunc/aws-api-gw/pkg/apis"
+	"github.com/refunc/aws-api-gw/pkg/controllers"
 	"github.com/refunc/aws-api-gw/pkg/services"
 	"github.com/refunc/aws-api-gw/pkg/utils"
 	"github.com/refunc/aws-api-gw/pkg/utils/awsutils"
@@ -77,7 +78,7 @@ func UpdateFunctionCode(c *gin.Context) {
 		return
 	}
 
-	fnConfiguration, err := FuncdefToLambdaConfiguration(*fndef)
+	fnConfiguration, err := controllers.FuncdefToLambdaConfiguration(*fndef)
 	if err != nil {
 		klog.Errorf("funcdef to lambda configuration error %v", err)
 		awsutils.AWSErrorResponse(c, 500, "ServiceException")
@@ -137,7 +138,7 @@ func UpdateFunctionConfiguration(c *gin.Context) {
 		return
 	}
 
-	fnConfiguration, err := FuncdefToLambdaConfiguration(*fndef)
+	fnConfiguration, err := controllers.FuncdefToLambdaConfiguration(*fndef)
 	if err != nil {
 		klog.Errorf("funcdef to lambda configuration error %v", err)
 		awsutils.AWSErrorResponse(c, 500, "ServiceException")

@@ -10,7 +10,8 @@ import (
 	"time"
 
 	nats "github.com/nats-io/nats.go"
-	"github.com/refunc/aws-api-gw/pkg/controllers"
+	"github.com/refunc/aws-api-gw/pkg/controllers/functions"
+	"github.com/refunc/aws-api-gw/pkg/controllers/urls"
 	"github.com/refunc/aws-api-gw/pkg/utils/awsutils"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -32,15 +33,23 @@ func CreateHTTPRouter(sc sharedcfg.Configs, cfg Config, stopC <-chan struct{}) *
 	router.Use(gin.Recovery())
 	router.Use(WithClientSet(sc, stopC))
 	router.Use(WithAwsSign(sc, cfg.Rbac))
-	apis := router.Group("/2015-03-31")
+	functionApis := router.Group("/2015-03-31")
 	{
-		apis.POST("/functions", controllers.CreateFunction)
-		apis.GET("/functions/", controllers.ListFunction)
-		apis.GET("/functions/:FunctionName", controllers.GetFunction)
-		apis.DELETE("/functions/:FunctionName", controllers.DeleteFunction)
-		apis.PUT("/functions/:FunctionName/code", controllers.UpdateFunctionCode)
-		apis.PUT("/functions/:FunctionName/configuration", controllers.UpdateFunctionConfiguration)
-		apis.POST("/functions/:FunctionName/invocations", controllers.InvokeFunction)
+		functionApis.POST("/functions", functions.CreateFunction)
+		functionApis.GET("/functions/", functions.ListFunction)
+		functionApis.GET("/functions/:FunctionName", functions.GetFunction)
+		functionApis.DELETE("/functions/:FunctionName", functions.DeleteFunction)
+		functionApis.PUT("/functions/:FunctionName/code", functions.UpdateFunctionCode)
+		functionApis.PUT("/functions/:FunctionName/configuration", functions.UpdateFunctionConfiguration)
+		functionApis.POST("/functions/:FunctionName/invocations", functions.InvokeFunction)
+	}
+	urlApis := router.Group("/2021-10-31")
+	{
+		urlApis.GET("/functions/:FunctionName/url", urls.GetURL)
+		urlApis.GET("/functions/:FunctionName/urls", urls.ListURL)
+		urlApis.POST("/functions/:FunctionName/url", urls.CreateURL)
+		urlApis.PUT("/functions/:FunctionName/url", urls.UpdateURL)
+		urlApis.DELETE("/functions/:FunctionName/url", urls.DeleteURL)
 	}
 	return router
 }

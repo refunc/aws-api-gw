@@ -1,4 +1,4 @@
-package controllers
+package functions
 
 import (
 	"context"
@@ -9,12 +9,12 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/refunc/aws-api-gw/pkg/apis"
+	"github.com/refunc/aws-api-gw/pkg/controllers"
 	"github.com/refunc/aws-api-gw/pkg/services"
 	"github.com/refunc/aws-api-gw/pkg/utils"
 	"github.com/refunc/aws-api-gw/pkg/utils/awsutils"
 	"github.com/refunc/aws-api-gw/pkg/utils/rfutils"
 	rfv1beta3 "github.com/refunc/refunc/pkg/apis/refunc/v1beta3"
-	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/klog/v2"
@@ -57,7 +57,7 @@ func CreateFunction(c *gin.Context) {
 			Namespace: region,
 			Labels: map[string]string{
 				rfv1beta3.LabelLambdaName:    payload.FunctionName,
-				rfv1beta3.LabelLambdaVersion: LambdaVersion,
+				rfv1beta3.LabelLambdaVersion: controllers.LambdaVersion,
 			},
 			Annotations: map[string]string{},
 		},
@@ -83,53 +83,7 @@ func CreateFunction(c *gin.Context) {
 		return
 	}
 
-	// auto create http trigger
-	triggerName := fmt.Sprintf("lambda-http-%s", funcdef.Name)
-	trigger := &rfv1beta3.Trigger{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: funcdef.Namespace,
-			Name:      triggerName,
-			Labels: map[string]string{
-				LambdaLabelAutoCreated: "true",
-			},
-			Annotations: map[string]string{
-				rfv1beta3.AnnotationRPCVer: "v2",
-			},
-			OwnerReferences: []metav1.OwnerReference{
-				{
-					APIVersion: rfv1beta3.APIVersion,
-					Kind:       rfv1beta3.FuncdefKind,
-					Name:       funcdef.Name,
-					UID:        funcdef.UID,
-				},
-			},
-		},
-		Spec: rfv1beta3.TriggerSpec{
-			Type:     TriggerType,
-			FuncName: funcdef.Name,
-		},
-	}
-
-	// apply trigger
-	currentTrigger, err := refuncClient.RefuncV1beta3().Triggers(region).Get(context.TODO(), triggerName, metav1.GetOptions{})
-	if err != nil && !errors.IsNotFound(err) {
-		klog.Errorf("get current trigger error %v", err)
-		awsutils.AWSErrorResponse(c, 500, "ServiceException")
-		return
-	}
-	if currentTrigger.Name == "" {
-		_, err = refuncClient.RefuncV1beta3().Triggers(region).Create(context.TODO(), trigger, metav1.CreateOptions{})
-	} else {
-		trigger.ResourceVersion = currentTrigger.ResourceVersion
-		_, err = refuncClient.RefuncV1beta3().Triggers(region).Update(context.TODO(), trigger, metav1.UpdateOptions{})
-	}
-	if err != nil {
-		klog.Errorf("ensure trigger error %v", err)
-		awsutils.AWSErrorResponse(c, 500, "ServiceException")
-		return
-	}
-
-	fnConfiguration, err := FuncdefToLambdaConfiguration(*funcdef)
+	fnConfiguration, err := controllers.FuncdefToLambdaConfiguration(*funcdef)
 	if err != nil {
 		klog.Errorf("funcdef to lambda configuration error %v", err)
 		awsutils.AWSErrorResponse(c, 500, "ServiceException")

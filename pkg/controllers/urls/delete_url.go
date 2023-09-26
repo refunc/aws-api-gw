@@ -1,10 +1,10 @@
-package controllers
+package urls
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/gin-gonic/gin"
-	"github.com/refunc/aws-api-gw/pkg/services"
 	"github.com/refunc/aws-api-gw/pkg/utils"
 	"github.com/refunc/aws-api-gw/pkg/utils/awsutils"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -12,20 +12,19 @@ import (
 	"k8s.io/klog/v2"
 )
 
-func DeleteFunction(c *gin.Context) {
+func DeleteURL(c *gin.Context) {
 	functionName := c.Param("FunctionName")
-	//TODO support get function Qualifier
-
+	triggerName := fmt.Sprintf("lambda-http-%s", functionName)
 	refuncClient, err := utils.GetRefuncClient(c)
 	if err != nil {
 		awsutils.AWSErrorResponse(c, 500, "ServiceException")
 		return
 	}
-
 	region := c.GetString("region")
-	fndef, err := refuncClient.RefuncV1beta3().Funcdeves(region).Get(context.TODO(), functionName, metav1.GetOptions{})
+
+	currentTrigger, err := refuncClient.RefuncV1beta3().Triggers(region).Get(context.TODO(), triggerName, metav1.GetOptions{})
 	if err != nil && !errors.IsNotFound(err) {
-		klog.Errorf("get funcdef error %v", err)
+		klog.Errorf("get current trigger error %v", err)
 		awsutils.AWSErrorResponse(c, 500, "ServiceException")
 		return
 	}
@@ -34,16 +33,9 @@ func DeleteFunction(c *gin.Context) {
 		return
 	}
 
-	err = refuncClient.RefuncV1beta3().Funcdeves(region).Delete(context.TODO(), fndef.Name, metav1.DeleteOptions{})
+	err = refuncClient.RefuncV1beta3().Triggers(region).Delete(context.TODO(), currentTrigger.Name, metav1.DeleteOptions{})
 	if err != nil {
-		klog.Errorf("delete funcdef error %v", err)
-		awsutils.AWSErrorResponse(c, 500, "ServiceException")
-		return
-	}
-
-	err = services.DelFunctionCode(fndef.Spec.Body)
-	if err != nil {
-		klog.Errorf("delete funcdef error %v", err)
+		klog.Errorf("delete trigger error %v", err)
 		awsutils.AWSErrorResponse(c, 500, "ServiceException")
 		return
 	}
