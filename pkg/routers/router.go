@@ -2,7 +2,7 @@ package routers
 
 import (
 	"bytes"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"regexp"
@@ -12,6 +12,8 @@ import (
 	nats "github.com/nats-io/nats.go"
 	"github.com/refunc/aws-api-gw/pkg/controllers"
 	"github.com/refunc/aws-api-gw/pkg/utils/awsutils"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog/v2"
 
@@ -140,15 +142,32 @@ func WithAwsSign(sc sharedcfg.Configs, rbac bool) gin.HandlerFunc {
 				c.Abort()
 				return
 			}
-			if len(sa.Secrets) != 1 {
-				klog.Errorf("secret for serviceaccount %s/%s error", sa.Namespace, sa.Name)
-				awsutils.AWSErrorResponse(c, 400, "InvalidCredentialException")
-				c.Abort()
-				return
+			var secret *corev1.Secret
+			if len(sa.Secrets) == 1 {
+				secret, err = secretLister.Secrets(region).Get(sa.Secrets[0].Name)
+				if err != nil {
+					klog.Error(err)
+					awsutils.AWSErrorResponse(c, 400, "InvalidCredentialException")
+					c.Abort()
+					return
+				}
+			} else {
+				secrets, err := secretLister.Secrets(region).List(labels.Everything())
+				if err != nil {
+					klog.Error(err)
+					awsutils.AWSErrorResponse(c, 400, "InvalidCredentialException")
+					c.Abort()
+					return
+				}
+				for _, sec := range secrets {
+					if sec.Annotations["kubernetes.io/service-account.name"] == sa.Name {
+						secret = sec
+						break
+					}
+				}
 			}
-			secret, err := secretLister.Secrets(region).Get(sa.Secrets[0].Name)
-			if err != nil {
-				klog.Error(err)
+			if secret == nil {
+				klog.Errorf("can't find %s/%s secret", sa.Namespace, sa.Name)
 				awsutils.AWSErrorResponse(c, 400, "InvalidCredentialException")
 				c.Abort()
 				return
@@ -163,14 +182,14 @@ func WithAwsSign(sc sharedcfg.Configs, rbac bool) gin.HandlerFunc {
 			accessSecret := string(tokenBts)
 
 			//copy origin body bytes
-			bodyBts, err := ioutil.ReadAll(c.Request.Body)
+			bodyBts, err := io.ReadAll(c.Request.Body)
 			if err != nil {
 				klog.Error(err)
 				awsutils.AWSErrorResponse(c, 500, "ServiceException")
 				c.Abort()
 				return
 			}
-			c.Request.Body = ioutil.NopCloser(bytes.NewReader(bodyBts))
+			c.Request.Body = io.NopCloser(bytes.NewReader(bodyBts))
 
 			//verify aws signature without body sha256
 			signer := awsSigner.NewSigner(awsCredentials.NewStaticCredentials(accessKeyID, accessSecret, ""))

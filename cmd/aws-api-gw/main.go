@@ -80,7 +80,7 @@ func main() {
 		},
 	}
 
-	cmd.Flags().StringVar(&config.Addr, "conf", "0.0.0.0:9000", "ListenAndServe Address.")
+	cmd.Flags().StringVar(&config.Addr, "addr", "0.0.0.0:9000", "ListenAndServe Address.")
 	cmd.Flags().BoolVar(&config.routerCfg.Rbac, "rbac", false, "Enable rbac auth.")
 	cmd.Flags().BoolVar(&config.Debug, "debug", false, "Enable gin's debug mode.")
 	cmd.Flags().StringVarP(&config.Namespace, "namespace", "n", "", "The scope of namepsace to manipulate.")
