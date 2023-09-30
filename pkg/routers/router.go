@@ -10,6 +10,7 @@ import (
 	"time"
 
 	nats "github.com/nats-io/nats.go"
+	"github.com/refunc/aws-api-gw/pkg/controllers/concurrency"
 	"github.com/refunc/aws-api-gw/pkg/controllers/functions"
 	"github.com/refunc/aws-api-gw/pkg/controllers/urls"
 	"github.com/refunc/aws-api-gw/pkg/utils/awsutils"
@@ -50,6 +51,10 @@ func CreateHTTPRouter(sc sharedcfg.Configs, cfg Config, stopC <-chan struct{}) *
 		urlApis.POST("/functions/:FunctionName/url", urls.CreateURL)
 		urlApis.PUT("/functions/:FunctionName/url", urls.UpdateURL)
 		urlApis.DELETE("/functions/:FunctionName/url", urls.DeleteURL)
+	}
+	concurrencyApis := router.Group("/2017-10-31")
+	{
+		concurrencyApis.PUT("/functions/:FunctionName/concurrency", concurrency.UpdateFunctionConcurrency)
 	}
 	return router
 }

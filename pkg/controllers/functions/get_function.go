@@ -10,6 +10,7 @@ import (
 	"github.com/refunc/aws-api-gw/pkg/controllers"
 	"github.com/refunc/aws-api-gw/pkg/utils"
 	"github.com/refunc/aws-api-gw/pkg/utils/awsutils"
+	rfv1beta3 "github.com/refunc/refunc/pkg/apis/refunc/v1beta3"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2"
@@ -44,11 +45,22 @@ func GetFunction(c *gin.Context) {
 		return
 	}
 
+	concurrencyNum := 1
+	concurrencySpec, ok := fndef.Annotations[rfv1beta3.AnnotationLambdaConcurrency]
+	if ok {
+		if num, err := strconv.Atoi(concurrencySpec); err == nil {
+			concurrencyNum = num
+		}
+	}
+
 	c.JSON(http.StatusOK, apis.GetFunctionResponse{
 		Code: map[string]string{
 			"Location": fndef.Spec.Body,
 		},
 		Configuration: fnConfiguration,
+		Concurrency: apis.FunctionConcurrencyConfig{
+			ReservedConcurrentExecutions: int64(concurrencyNum),
+		},
 	})
 }
 

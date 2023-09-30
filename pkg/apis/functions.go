@@ -29,10 +29,10 @@ type CreateFunctionResponse struct {
 }
 
 type GetFunctionResponse struct {
-	Code          map[string]string     `json:"Code"`
-	Concurrency   FunctionConcurrency   `json:"Concurrency"`
-	Configuration FunctionConfiguration `json:"Configuration"`
-	Tags          map[string]string     `json:"Tags"`
+	Code          map[string]string         `json:"Code"`
+	Concurrency   FunctionConcurrencyConfig `json:"Concurrency"`
+	Configuration FunctionConfiguration     `json:"Configuration"`
+	Tags          map[string]string         `json:"Tags"`
 }
 
 type ListFunctionResponse struct {
@@ -127,8 +127,4 @@ type FunctionVpcConfig struct {
 	SecurityGroupIds []string `json:"SecurityGroupIds"`
 	SubnetIds        []string `json:"SubnetIds"`
 	VpcId            string   `json:"VpcId"`
-}
-
-type FunctionConcurrency struct {
-	Concurrency int64 `json:"Concurrency"`
 }
