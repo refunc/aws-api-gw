@@ -95,6 +95,7 @@ func TriggerToEventSourceConfig(trigger rfv1beta3.Trigger) (apis.EventSourceMapp
 		SelfManagedEventSource: apis.SelfManagedEventSource{
 			Endpoints: endpoints,
 		},
+		UUID: trigger.Name,
 	}, nil
 }
 

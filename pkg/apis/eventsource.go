@@ -4,6 +4,7 @@ type EventSourceMappingConfiguration struct {
 	EventSourceArn         string                 `json:"EventSourceArn"` //arn:<trigger-type>:<trigger-name>
 	FunctionArn            string                 `json:"FunctionName"`
 	SelfManagedEventSource SelfManagedEventSource `json:"SelfManagedEventSource"`
+	UUID                   string                 `json:"UUID"`
 }
 
 type SelfManagedEventSource struct {

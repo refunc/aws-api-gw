@@ -49,7 +49,7 @@ func CreateHTTPRouter(sc sharedcfg.Configs, cfg Config, stopC <-chan struct{}) *
 	{
 		eventsourcemappingApis.POST("/", eventsourcemapping.CreateEventSource)
 		eventsourcemappingApis.GET("/", eventsourcemapping.ListEventSource)
-		eventsourcemappingApis.GET("/:EventSourceName", eventsourcemapping.GetEventSource)
+		eventsourcemappingApis.GET("/:EventSourceName", eventsourcemapping.GetEventSource) //EventSourceName: lambda-<trigger-arn>-<func-name>-<event-name>
 		eventsourcemappingApis.DELETE("/:EventSourceName", eventsourcemapping.DeleteEventSource)
 		eventsourcemappingApis.PUT("/:EventSourceName", eventsourcemapping.UpdateEventSource)
 	}
