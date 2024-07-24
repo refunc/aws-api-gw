@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -89,10 +90,20 @@ func TriggerToEventSourceConfig(trigger rfv1beta3.Trigger) (apis.EventSourceMapp
 		endpoints["saveResult"] = []string{fmt.Sprintf("%v", trigger.Spec.Cron.SaveResult)}
 	}
 	return apis.EventSourceMappingConfiguration{
-		EventSourceArn: fmt.Sprintf("arm:cron:%s", strings.TrimPrefix(trigger.Name, fmt.Sprintf("lambda-cron-%s-", trigger.Spec.FuncName))),
+		EventSourceArn: fmt.Sprintf("arn:cron:%s", strings.TrimPrefix(trigger.Name, fmt.Sprintf("lambda-cron-%s-", trigger.Spec.FuncName))),
 		FunctionArn:    trigger.Spec.FuncName,
 		SelfManagedEventSource: apis.SelfManagedEventSource{
 			Endpoints: endpoints,
 		},
 	}, nil
+}
+
+func GetArnTriggerType(arn string) (string, error) {
+	if arn == "http" {
+		return HTTPTriggerType, nil
+	}
+	if arn == "cron" {
+		return CronTriggerType, nil
+	}
+	return "", errors.New("not supported arn")
 }

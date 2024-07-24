@@ -9,3 +9,8 @@ type EventSourceMappingConfiguration struct {
 type SelfManagedEventSource struct {
 	Endpoints map[string][]string `json:"Endpoints"`
 }
+
+type ListEventSourceMappingResponse struct {
+	EventSourceMappings []EventSourceMappingConfiguration `json:"EventSourceMappings"`
+	NextMarker          string                            `json:"NextMarker,omitempty"`
+}
