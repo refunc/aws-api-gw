@@ -11,6 +11,7 @@ import (
 
 	nats "github.com/nats-io/nats.go"
 	"github.com/refunc/aws-api-gw/pkg/controllers/concurrency"
+	"github.com/refunc/aws-api-gw/pkg/controllers/eventsourcemapping"
 	"github.com/refunc/aws-api-gw/pkg/controllers/functions"
 	"github.com/refunc/aws-api-gw/pkg/controllers/urls"
 	"github.com/refunc/aws-api-gw/pkg/utils/awsutils"
@@ -43,6 +44,14 @@ func CreateHTTPRouter(sc sharedcfg.Configs, cfg Config, stopC <-chan struct{}) *
 		functionApis.PUT("/functions/:FunctionName/code", functions.UpdateFunctionCode)
 		functionApis.PUT("/functions/:FunctionName/configuration", functions.UpdateFunctionConfiguration)
 		functionApis.POST("/functions/:FunctionName/invocations", functions.InvokeFunction)
+	}
+	eventsourcemappingApis := functionApis.Group("/event-source-mappings")
+	{
+		eventsourcemappingApis.POST("/", eventsourcemapping.CreateEventSource)
+		eventsourcemappingApis.GET("/", eventsourcemapping.ListEventSource)
+		eventsourcemappingApis.GET("/:EventSourceName", eventsourcemapping.GetEventSource)
+		eventsourcemappingApis.DELETE("/:EventSourceName", eventsourcemapping.DeleteEventSource)
+		eventsourcemappingApis.PUT("/:EventSourceName", eventsourcemapping.UpdateEventSource)
 	}
 	urlApis := router.Group("/2021-10-31")
 	{

@@ -57,7 +57,7 @@ func UpdateURL(c *gin.Context) {
 		return
 	}
 
-	urlConfig, err := controllers.HTTPriggerToURLConfig(*updatedTrigger)
+	urlConfig, err := controllers.HTTPtriggerToURLConfig(*updatedTrigger)
 	if err != nil {
 		klog.Errorf("httptrigger to lambda url config error %v", err)
 		awsutils.AWSErrorResponse(c, 500, "ServiceException")

@@ -50,6 +50,8 @@ func CreateURL(c *gin.Context) {
 			Name:      triggerName,
 			Labels: map[string]string{
 				controllers.LambdaLabelAutoCreated: "true",
+				controllers.LambdaLabelFuncdef:     funcdef.Name,
+				controllers.LambdaLabelTriggerType: controllers.HTTPTriggerType,
 			},
 			Annotations: map[string]string{
 				rfv1beta3.AnnotationRPCVer: "v2",
@@ -84,7 +86,7 @@ func CreateURL(c *gin.Context) {
 		return
 	}
 
-	urlConfig, err := controllers.HTTPriggerToURLConfig(*trigger)
+	urlConfig, err := controllers.HTTPtriggerToURLConfig(*trigger)
 	if err != nil {
 		klog.Errorf("httptrigger to lambda url config error %v", err)
 		awsutils.AWSErrorResponse(c, 500, "ServiceException")

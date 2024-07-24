@@ -9,6 +9,7 @@ require (
 	github.com/minio/minio-go v6.0.14+incompatible
 	github.com/nats-io/nats.go v1.13.0
 	github.com/refunc/refunc v0.2.2
+	github.com/robfig/cron v1.2.0
 	github.com/spf13/cobra v1.3.0
 	k8s.io/api v0.20.2
 	k8s.io/apimachinery v0.20.2

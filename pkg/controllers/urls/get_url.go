@@ -38,7 +38,7 @@ func GetURL(c *gin.Context) {
 		return
 	}
 
-	urlConfig, err := controllers.HTTPriggerToURLConfig(*trigger)
+	urlConfig, err := controllers.HTTPtriggerToURLConfig(*trigger)
 	if err != nil {
 		klog.Errorf("httptrigger to lambda url config error %v", err)
 		awsutils.AWSErrorResponse(c, 500, "ServiceException")
@@ -71,7 +71,7 @@ func ListURL(c *gin.Context) {
 		return
 	}
 
-	urlConfig, err := controllers.HTTPriggerToURLConfig(*trigger)
+	urlConfig, err := controllers.HTTPtriggerToURLConfig(*trigger)
 	if err != nil {
 		klog.Errorf("httptrigger to lambda url config error %v", err)
 		awsutils.AWSErrorResponse(c, 500, "ServiceException")
