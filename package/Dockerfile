@@ -2,7 +2,7 @@ FROM alpine:3.7
 
 LABEL maintainer="arvintian8@gmail.com"
 
-RUN apk --no-cache add ca-certificates bash wget curl
+RUN apk --no-cache add ca-certificates bash wget curl tzdata
 
 VOLUME [ "/var/run/refunc" ]
 
