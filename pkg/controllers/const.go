@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -71,26 +70,37 @@ func HTTPtriggerToURLConfig(trigger rfv1beta3.Trigger) (apis.FunctionURLConfig, 
 }
 
 func TriggerToEventSourceConfig(trigger rfv1beta3.Trigger) (apis.EventSourceMappingConfiguration, error) {
-	if trigger.Spec.Cron == nil {
-		return apis.EventSourceMappingConfiguration{}, fmt.Errorf("trigger %s not is cron type", trigger.Name)
+	if trigger.Spec.Type == HTTPTriggerType {
+		return apis.EventSourceMappingConfiguration{}, fmt.Errorf("trigger %s is http type", trigger.Name)
 	}
-	endpoints := map[string][]string{
-		"cron": {trigger.Spec.Cron.Cron},
-	}
-	if len(trigger.Spec.Cron.Location) > 0 {
-		endpoints["location"] = []string{trigger.Spec.Cron.Location}
-	}
-	if trigger.Spec.Cron.Args != nil {
-		endpoints["args"] = []string{string(trigger.Spec.Cron.Args)}
-	}
-	if trigger.Spec.Cron.SaveLog {
-		endpoints["saveLog"] = []string{fmt.Sprintf("%v", trigger.Spec.Cron.SaveLog)}
-	}
-	if trigger.Spec.Cron.SaveResult {
-		endpoints["saveResult"] = []string{fmt.Sprintf("%v", trigger.Spec.Cron.SaveResult)}
+	endpoints := map[string][]string{}
+	if trigger.Spec.Type == CronTriggerType {
+		endpoints["cron"] = []string{trigger.Spec.Cron.Cron}
+		if len(trigger.Spec.Cron.Location) > 0 {
+			endpoints["location"] = []string{trigger.Spec.Cron.Location}
+		}
+		if trigger.Spec.Cron.Args != nil {
+			endpoints["args"] = []string{string(trigger.Spec.Cron.Args)}
+		}
+		if trigger.Spec.Cron.SaveLog {
+			endpoints["saveLog"] = []string{fmt.Sprintf("%v", trigger.Spec.Cron.SaveLog)}
+		}
+		if trigger.Spec.Cron.SaveResult {
+			endpoints["saveResult"] = []string{fmt.Sprintf("%v", trigger.Spec.Cron.SaveResult)}
+		}
+	} else {
+		if trigger.Spec.Common.Args != nil {
+			endpoints["args"] = []string{string(trigger.Spec.Common.Args)}
+		}
+		if trigger.Spec.Common.SaveLog {
+			endpoints["saveLog"] = []string{fmt.Sprintf("%v", trigger.Spec.Common.SaveLog)}
+		}
+		if trigger.Spec.Common.SaveResult {
+			endpoints["saveResult"] = []string{fmt.Sprintf("%v", trigger.Spec.Common.SaveResult)}
+		}
 	}
 	return apis.EventSourceMappingConfiguration{
-		EventSourceArn: fmt.Sprintf("arn:cron:%s", strings.TrimPrefix(trigger.Name, fmt.Sprintf("lambda-cron-%s-", trigger.Spec.FuncName))),
+		EventSourceArn: fmt.Sprintf("arn:%s:%s", trigger.Spec.Type, strings.TrimPrefix(trigger.Name, fmt.Sprintf("lambda-%s-", trigger.Spec.FuncName))),
 		FunctionArn:    trigger.Spec.FuncName,
 		SelfManagedEventSource: apis.SelfManagedEventSource{
 			Endpoints: endpoints,
@@ -106,5 +116,5 @@ func GetArnTriggerType(arn string) (string, error) {
 	if arn == "cron" {
 		return CronTriggerType, nil
 	}
-	return "", errors.New("not supported arn")
+	return arn, nil
 }

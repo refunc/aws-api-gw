@@ -28,7 +28,7 @@ func GetEventSource(c *gin.Context) {
 	region := c.GetString("region")
 	trigger, err := refuncClient.RefuncV1beta3().Triggers(region).Get(context.TODO(), triggerName, metav1.GetOptions{})
 	if err != nil && !errors.IsNotFound(err) {
-		klog.Errorf("get httptrigger error %v", err)
+		klog.Errorf("get trigger error %v", err)
 		awsutils.AWSErrorResponse(c, 500, "ServiceException")
 		return
 	}
@@ -60,8 +60,18 @@ func ListEventSource(c *gin.Context) {
 		awsutils.AWSErrorResponse(c, 400, "InvalidParameterValueException")
 		return
 	}
+	if triggerType == controllers.HTTPTriggerType {
+		awsutils.AWSErrorResponse(c, 400, "InvalidParameterValueException HTTPTriger Managed by FunctionURL")
+		return
+	}
 	options := metav1.ListOptions{
 		LabelSelector: controllers.LambdaLabelTriggerType + "=" + triggerType + "," + controllers.LambdaLabelFuncdef + "=" + c.Query("FunctionName"),
+	}
+	if triggerType == "*" {
+		// list any type trigger, except http trigger
+		options = metav1.ListOptions{
+			LabelSelector: controllers.LambdaLabelTriggerType + "!=" + controllers.HTTPTriggerType + "," + controllers.LambdaLabelFuncdef + "=" + c.Query("FunctionName"),
+		}
 	}
 	limit, err := strconv.Atoi(c.Query("MaxItems"))
 	if err == nil && limit > 0 {

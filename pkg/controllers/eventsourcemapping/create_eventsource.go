@@ -81,25 +81,84 @@ func triggerCutter(funcdef *rfv1beta3.Funcdef, ec apis.EventSourceMappingConfigu
 		return nil, fmt.Errorf("event arn %s format error", ec.EventSourceArn)
 	}
 	triggerType, triggerName := arns[1], arns[2]
-	//only support cron event.
-	if triggerType != "cron" {
-		return nil, errors.New("not support event type")
+	triggerName = fmt.Sprintf("lambda-%s-%s", ec.FunctionArn, triggerName)
+	trigger := &rfv1beta3.Trigger{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: funcdef.Namespace,
+			Name:      triggerName,
+			Labels: map[string]string{
+				controllers.LambdaLabelAutoCreated: "true",
+				controllers.LambdaLabelFuncdef:     funcdef.Name,
+				controllers.LambdaLabelTriggerType: triggerType,
+			},
+			Annotations: map[string]string{
+				rfv1beta3.AnnotationRPCVer: "v2",
+			},
+			OwnerReferences: []metav1.OwnerReference{
+				{
+					APIVersion: rfv1beta3.APIVersion,
+					Kind:       rfv1beta3.FuncdefKind,
+					Name:       funcdef.Name,
+					UID:        funcdef.UID,
+				},
+			},
+		},
+		Spec: rfv1beta3.TriggerSpec{
+			Type:          triggerType,
+			FuncName:      funcdef.Name,
+			TriggerConfig: rfv1beta3.TriggerConfig{},
+		},
 	}
-	triggerName = fmt.Sprintf("lambda-cron-%s-%s", ec.FunctionArn, triggerName)
-	triggerConfig := rfv1beta3.CronTrigger{}
+	// cron trigger
+	if triggerType == "cron" || triggerType == controllers.CronTriggerType {
+		triggerConfig := rfv1beta3.CronTrigger{}
+		for key, vals := range ec.SelfManagedEventSource.Endpoints {
+			if key == "cron" && len(vals) > 0 {
+				if _, err := cron.Parse(vals[0]); err != nil {
+					return nil, err
+				}
+				triggerConfig.Cron = vals[0]
+			}
+			if key == "location" && len(vals) > 0 {
+				if _, err := time.LoadLocation(vals[0]); err != nil {
+					return nil, err
+				}
+				triggerConfig.Location = vals[0]
+			}
+			if key == "args" && len(vals) > 0 {
+				val := json.RawMessage(vals[0])
+				if err := json.Unmarshal(json.RawMessage(vals[0]), &map[string]interface{}{}); err != nil {
+					return nil, err
+				}
+				triggerConfig.Args = val
+			}
+			if key == "saveLog" && len(vals) > 0 {
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return nil, err
+				}
+				triggerConfig.SaveLog = val
+			}
+			if key == "saveResult" && len(vals) > 0 {
+				val, err := strconv.ParseBool(vals[0])
+				if err != nil {
+					return nil, err
+				}
+				triggerConfig.SaveResult = val
+			}
+		}
+		trigger.Labels[controllers.LambdaLabelTriggerType] = controllers.CronTriggerType
+		trigger.Spec.Type = controllers.CronTriggerType
+		trigger.Spec.TriggerConfig.Cron = &triggerConfig
+		return trigger, nil
+	}
+	// http trigger
+	if triggerType == controllers.HTTPTriggerType {
+		return nil, errors.New("please setting http trigger by create-url")
+	}
+	// any trigger type
+	triggerConfig := rfv1beta3.CommonTrigger{}
 	for key, vals := range ec.SelfManagedEventSource.Endpoints {
-		if key == "cron" && len(vals) > 0 {
-			if _, err := cron.Parse(vals[0]); err != nil {
-				return nil, err
-			}
-			triggerConfig.Cron = vals[0]
-		}
-		if key == "location" && len(vals) > 0 {
-			if _, err := time.LoadLocation(vals[0]); err != nil {
-				return nil, err
-			}
-			triggerConfig.Location = vals[0]
-		}
 		if key == "args" && len(vals) > 0 {
 			val := json.RawMessage(vals[0])
 			if err := json.Unmarshal(json.RawMessage(vals[0]), &map[string]interface{}{}); err != nil {
@@ -122,34 +181,6 @@ func triggerCutter(funcdef *rfv1beta3.Funcdef, ec apis.EventSourceMappingConfigu
 			triggerConfig.SaveResult = val
 		}
 	}
-	trigger := &rfv1beta3.Trigger{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: funcdef.Namespace,
-			Name:      triggerName,
-			Labels: map[string]string{
-				controllers.LambdaLabelAutoCreated: "true",
-				controllers.LambdaLabelFuncdef:     funcdef.Name,
-				controllers.LambdaLabelTriggerType: controllers.CronTriggerType,
-			},
-			Annotations: map[string]string{
-				rfv1beta3.AnnotationRPCVer: "v2",
-			},
-			OwnerReferences: []metav1.OwnerReference{
-				{
-					APIVersion: rfv1beta3.APIVersion,
-					Kind:       rfv1beta3.FuncdefKind,
-					Name:       funcdef.Name,
-					UID:        funcdef.UID,
-				},
-			},
-		},
-		Spec: rfv1beta3.TriggerSpec{
-			Type:     controllers.CronTriggerType,
-			FuncName: funcdef.Name,
-			TriggerConfig: rfv1beta3.TriggerConfig{
-				Cron: &triggerConfig,
-			},
-		},
-	}
+	trigger.Spec.TriggerConfig.Common = &triggerConfig
 	return trigger, nil
 }
