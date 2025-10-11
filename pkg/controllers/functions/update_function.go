@@ -2,6 +2,7 @@ package functions
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -126,8 +127,15 @@ func UpdateFunctionConfiguration(c *gin.Context) {
 	if payload.Timeout > 0 {
 		fndef.Spec.Runtime.Timeout = int(payload.Timeout)
 	}
-	if payload.Environment.Variables != nil && len(payload.Environment.Variables) > 0 {
+	if len(payload.Environment.Variables) > 0 {
 		fndef.Spec.Runtime.Envs = payload.Environment.Variables
+	}
+	if payload.Description != "" {
+		if utils.IsBase64(payload.Description) {
+			fndef.Annotations[controllers.LambdaAnnotationDesc] = payload.Description
+		} else {
+			fndef.Annotations[controllers.LambdaAnnotationDesc] = base64.StdEncoding.EncodeToString([]byte(payload.Description))
+		}
 	}
 
 	// apply funcdef

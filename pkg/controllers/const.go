@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -15,6 +16,7 @@ const (
 	LambdaLabelAutoCreated   = "lambda.refunc.io/auto-created"
 	LambdaLabelFuncdef       = "lambda.refunc.io/funcdef"
 	LambdaLabelTriggerType   = "lambda.refunc.io/triger-type"
+	LambdaAnnotationDesc     = "lambda.refunc.io/description"
 	HTTPTriggerType          = "httptrigger"
 	CronTriggerType          = "crontrigger"
 	HeaderAmzInvocationType  = "X-Amz-Invocation-Type"
@@ -35,12 +37,19 @@ func FuncdefToLambdaConfiguration(fndef rfv1beta3.Funcdef) (apis.FunctionConfigu
 			codeSize = int64(size)
 		}
 	}
+	description := ""
+	if desc, ok := fndef.Annotations[LambdaAnnotationDesc]; ok {
+		if bts, err := base64.StdEncoding.DecodeString(desc); err == nil {
+			description = string(bts)
+		}
+	}
 	return apis.FunctionConfiguration{
 		CodeSha256: fndef.Spec.Hash,
 		CodeSize:   codeSize,
 		Environment: &apis.FunctionEnvironment{
 			Variables: fndef.Spec.Runtime.Envs,
 		},
+		Description:  description,
 		FunctionName: fndef.Name,
 		Handler:      fndef.Spec.Entry,
 		LastModified: fndef.CreationTimestamp.Format(time.RFC3339),

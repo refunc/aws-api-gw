@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 
@@ -47,4 +48,9 @@ func GetNatsConn(c *gin.Context) (*nats.Conn, error) {
 		return nil, errors.New("get nats conn error")
 	}
 	return conn.(*nats.Conn), nil
+}
+
+func IsBase64(s string) bool {
+	_, err := base64.StdEncoding.DecodeString(s)
+	return err == nil
 }

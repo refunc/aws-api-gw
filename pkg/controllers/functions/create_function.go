@@ -2,6 +2,7 @@ package functions
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -47,7 +48,7 @@ func CreateFunction(c *gin.Context) {
 	timeout := rfutils.GetTimeout(int(payload.Timeout))
 
 	// apply funcdef
-	funcdef, err := refuncClient.RefuncV1beta3().Funcdeves(region).Create(context.TODO(), &rfv1beta3.Funcdef{
+	fndef := &rfv1beta3.Funcdef{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: rfv1beta3.APIVersion,
 			Kind:       rfv1beta3.FuncdefKind,
@@ -72,7 +73,15 @@ func CreateFunction(c *gin.Context) {
 			},
 			Custom: json.RawMessage(fmt.Sprintf(`{"codeSize":%d}`, codeSize)),
 		},
-	}, metav1.CreateOptions{})
+	}
+	if payload.Description != "" {
+		if utils.IsBase64(payload.Description) {
+			fndef.Annotations[controllers.LambdaAnnotationDesc] = payload.Description
+		} else {
+			fndef.Annotations[controllers.LambdaAnnotationDesc] = base64.StdEncoding.EncodeToString([]byte(payload.Description))
+		}
+	}
+	funcdef, err := refuncClient.RefuncV1beta3().Funcdeves(region).Create(context.TODO(), fndef, metav1.CreateOptions{})
 	if err != nil {
 		klog.Errorf("create funcdef error %v", err)
 		if strings.Contains(err.Error(), "exists") {
