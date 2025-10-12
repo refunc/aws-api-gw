@@ -80,6 +80,7 @@ func invokeRequestResponse(c *gin.Context, natsConn *nats.Conn, args json.RawMes
 	request := &messages.InvokeRequest{
 		Args:      args,
 		RequestID: rfutils.GenID(args),
+		Deadline:  time.Now().Add(time.Duration(fndef.Spec.Runtime.Timeout) * time.Second),
 	}
 	endpoint := fndef.Namespace + "/" + fndef.Name
 
