@@ -2,6 +2,7 @@ package eventsourcemapping
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -159,6 +160,13 @@ func triggerCutter(funcdef *rfv1beta3.Funcdef, ec apis.EventSourceMappingConfigu
 	// any trigger type
 	triggerConfig := rfv1beta3.CommonTrigger{}
 	for key, vals := range ec.SelfManagedEventSource.Endpoints {
+		if key == "mapping" && len(vals) > 0 && utils.IsBase64(vals[0]) {
+			bts, _ := base64.StdEncoding.DecodeString(vals[0])
+			if err := json.Unmarshal(bts, &triggerConfig); err != nil {
+				return nil, err
+			}
+			break
+		}
 		if key == "args" && len(vals) > 0 {
 			val := json.RawMessage(vals[0])
 			if err := json.Unmarshal(json.RawMessage(vals[0]), &map[string]interface{}{}); err != nil {
