@@ -10,7 +10,7 @@ require (
 	github.com/gin-gonic/gin v1.7.7
 	github.com/minio/minio-go v6.0.14+incompatible
 	github.com/nats-io/nats.go v1.13.0
-	github.com/refunc/refunc v0.2.4-0.20250408135459-202e26c90a7a
+	github.com/refunc/refunc v0.2.4-0.20251014061932-ca549af89c7b
 	github.com/robfig/cron v1.2.0
 	github.com/spf13/cobra v1.3.0
 	k8s.io/api v0.23.17

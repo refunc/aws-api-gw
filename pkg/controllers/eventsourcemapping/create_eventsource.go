@@ -114,6 +114,13 @@ func triggerCutter(funcdef *rfv1beta3.Funcdef, ec apis.EventSourceMappingConfigu
 	if triggerType == "cron" || triggerType == controllers.CronTriggerType {
 		triggerConfig := rfv1beta3.CronTrigger{}
 		for key, vals := range ec.SelfManagedEventSource.Endpoints {
+			if key == "mapping" && len(vals) > 0 && utils.IsBase64(vals[0]) {
+				bts, _ := base64.StdEncoding.DecodeString(vals[0])
+				if err := json.Unmarshal(bts, &triggerConfig); err != nil {
+					return nil, err
+				}
+				break
+			}
 			if key == "cron" && len(vals) > 0 {
 				if _, err := cron.Parse(vals[0]); err != nil {
 					return nil, err
